@@ -257,27 +257,13 @@
             
             let fixedData = data.fixed_objectives || [];
             if (typeof fixedData === 'string') {
-                try {
-                    fixedObjectives = JSON.parse(fixedData);
-                } catch (e) {
-                    console.error("Failed to parse fixed_objectives JSON string:", e);
-                    fixedObjectives = [];
-                }
-            } else {
-                fixedObjectives = fixedData;
-            }
+                try { fixedObjectives = JSON.parse(fixedData); } catch (e) { console.error("Failed to parse fixed_objectives:", e); fixedObjectives = []; }
+            } else { fixedObjectives = fixedData; }
 
             let tacticalData = data.tactical_objectives || [];
-             if (typeof tacticalData === 'string') {
-                try {
-                    tacticalObjectives = JSON.parse(tacticalData);
-                } catch (e) {
-                    console.error("Failed to parse tactical_objectives JSON string:", e);
-                    tacticalObjectives = [];
-                }
-            } else {
-                tacticalObjectives = tacticalData;
-            }
+            if (typeof tacticalData === 'string') {
+                try { tacticalObjectives = JSON.parse(tacticalData); } catch (e) { console.error("Failed to parse tactical_objectives:", e); tacticalObjectives = []; }
+            } else { tacticalObjectives = tacticalData; }
             
             if (!gameState.setupComplete) {
                 showSetup();
@@ -345,7 +331,7 @@
                     `;
                     area.appendChild(container);
                 }
-            } else { // Tactical
+            } else {
                 const container = document.createElement('div');
                 container.className = 'bg-gray-900 p-3 rounded-lg';
                 container.innerHTML = `
@@ -406,6 +392,44 @@
             content.innerHTML = `<p class="text-center">Score sheet coming soon!</p>`;
         }
 
+        function calculateTotals() {
+            const p1 = gameState.player1;
+            const p2 = gameState.player2;
+            p1.totalVp = p1.primaryVp + p1.challengerVp + (p1.secondary1?.score || 0) + (p1.secondary2?.score || 0);
+            p2.totalVp = p2.primaryVp + p2.challengerVp + (p2.secondary1?.score || 0) + (p2.secondary2?.score || 0);
+        }
+
+        async function updateFirestore(payload) {
+            calculateTotals();
+            const fullPayload = { ...payload };
+            fullPayload['gameState.player1.totalVp'] = gameState.player1.totalVp;
+            fullPayload['gameState.player2.totalVp'] = gameState.player2.totalVp;
+            await updateDoc(appDocRef, fullPayload);
+        }
+
+        async function handleScoreboardClick(e) {
+            const target = e.target.closest('button');
+            if (!target) return;
+
+            const player = target.dataset.player;
+            const field = target.dataset.field;
+            const secondary = target.dataset.secondary;
+
+            if (field) { // Primary, CP, Challenger
+                const isIncrement = target.classList.contains('btn-green');
+                const key = `gameState.player${player}.${field}`;
+                const currentValue = gameState[`player${player}`][field];
+                const newValue = isIncrement ? currentValue + 1 : Math.max(0, currentValue - 1);
+                await updateFirestore({ [key]: newValue });
+            } else if (secondary) { // Fixed Secondary
+                const isIncrement = target.classList.contains('btn-green');
+                const key = `gameState.player${player}.secondary${secondary}.score`;
+                const currentScore = gameState[`player${player}`][`secondary${secondary}`].score;
+                const newValue = isIncrement ? currentScore + 1 : Math.max(0, currentScore - 1);
+                await updateFirestore({ [key]: newValue });
+            }
+        }
+
         async function init() {
             try {
                 await signInAnonymously(auth);
@@ -444,27 +468,17 @@
                 document.querySelectorAll('.toggle-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
                         if (btn.classList.contains('toggle-btn-active')) return;
-
                         const parent = btn.parentElement;
-                        parent.querySelectorAll('.toggle-btn').forEach(b => {
-                            b.classList.remove('toggle-btn-active');
-                            b.classList.add('toggle-btn-inactive');
-                        });
-                        btn.classList.add('toggle-btn-active');
-                        btn.classList.remove('toggle-btn-inactive');
+                        parent.querySelectorAll('.toggle-btn').forEach(b => b.classList.replace('toggle-btn-active', 'toggle-btn-inactive'));
+                        btn.classList.replace('toggle-btn-inactive', 'toggle-btn-active');
 
                         if (parent.id.includes('role')) {
                            const otherPlayer = btn.dataset.player === '1' ? '2' : '1';
                            const otherRole = btn.dataset.role === 'Attacker' ? 'Defender' : 'Attacker';
                            const otherParent = document.getElementById(`setup_p${otherPlayer}_role`);
                            otherParent.querySelectorAll('.toggle-btn').forEach(b => {
-                               if (b.dataset.role === otherRole) {
-                                   b.classList.add('toggle-btn-active');
-                                   b.classList.remove('toggle-btn-inactive');
-                               } else {
-                                   b.classList.remove('toggle-btn-active');
-                                   b.classList.add('toggle-btn-inactive');
-                               }
+                               if (b.dataset.role === otherRole) b.classList.replace('toggle-btn-inactive', 'toggle-btn-active');
+                               else b.classList.replace('toggle-btn-active', 'toggle-btn-inactive');
                            });
                         }
                         
@@ -473,6 +487,8 @@
                         }
                     });
                 });
+
+                scoreboardPage.addEventListener('click', handleScoreboardClick);
 
             } catch (error) {
                 console.error("A critical error occurred during initialization:", error);
