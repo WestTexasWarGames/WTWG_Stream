@@ -161,15 +161,15 @@
         import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        const firebaseConfig = {
-          apiKey: "AIza...",
-          authDomain: "wtwg-streaming.firebaseapp.com",
-          projectId: "wtwg-streaming",
-          storageBucket: "wtwg-streaming.appspot.com",
-          messagingSenderId: "889956031791",
-          appId: "1:889956031791:web:d9292c951c8270f6abd5da",
-          measurementId: "G-5T9HMW7DMX"
-        };
+const firebaseConfig = {
+  apiKey: "AIzaSyAlhqPMvqP1MO_sV_jIXf7jrrm1MJtL2aI",
+  authDomain: "wtwg-streaming.firebaseapp.com",
+  projectId: "wtwg-streaming",
+  storageBucket: "wtwg-streaming.firebasestorage.app",
+  messagingSenderId: "889956031791",
+  appId: "1:889956031791:web:d9292c951c8270f6abd5da",
+  measurementId: "G-5T9HMW7DMX"
+};
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
