@@ -152,6 +152,7 @@
             </div>
         </div>
         <footer class="text-center mt-8 space-y-4">
+            <button id="backToSetupBtn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg">Return to Setup</button>
             <button id="resetGameBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">Reset Game</button>
         </footer>
     </div>
@@ -161,15 +162,15 @@
         import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAlhqPMvqP1MO_sV_jIXf7jrrm1MJtL2aI",
-  authDomain: "wtwg-streaming.firebaseapp.com",
-  projectId: "wtwg-streaming",
-  storageBucket: "wtwg-streaming.firebasestorage.app",
-  messagingSenderId: "889956031791",
-  appId: "1:889956031791:web:d9292c951c8270f6abd5da",
-  measurementId: "G-5T9HMW7DMX"
-};
+        const firebaseConfig = {
+          apiKey: "AIzaSyAlhqPMvqP1MO_sV_jIXf7jrrm1MJtL2aI",
+          authDomain: "wtwg-streaming.firebaseapp.com",
+          projectId: "wtwg-streaming",
+          storageBucket: "wtwg-streaming.appspot.com",
+          messagingSenderId: "889956031791",
+          appId: "1:889956031791:web:d9292c951c8270f6abd5da",
+          measurementId: "G-5T9HMW7DMX"
+        };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -180,12 +181,11 @@ const firebaseConfig = {
         let fixedObjectives = [];
         let tacticalObjectives = [];
 
-        // --- Page Elements ---
         const setupPage = document.getElementById('setupPage');
         const scoreboardPage = document.getElementById('scoreboardPage');
         const startGameBtn = document.getElementById('startGameBtn');
+        const backToSetupBtn = document.getElementById('backToSetupBtn');
 
-        // --- Logic for Page Switching ---
         function showScoreboard() {
             setupPage.classList.add('hidden');
             scoreboardPage.classList.remove('hidden');
@@ -196,7 +196,6 @@ const firebaseConfig = {
             setupPage.classList.remove('hidden');
         }
 
-        // --- UI Update Logic ---
         function updateUI(data) {
             if (!data || !data.gameState) return;
             gameState = data.gameState;
@@ -208,10 +207,56 @@ const firebaseConfig = {
                 return;
             }
             showScoreboard();
-
-            // Populate scoreboard
+            
             document.getElementById('turn').textContent = gameState.turn;
-            // ... (rest of the scoreboard UI update logic will go here)
+            document.getElementById('p1_name').textContent = gameState.player1.name;
+            document.getElementById('p1_cp').textContent = gameState.player1.cp;
+            document.getElementById('p1_primaryVp').textContent = gameState.player1.primaryVp;
+            document.getElementById('p1_totalVp').textContent = gameState.player1.totalVp;
+            document.getElementById('p2_name').textContent = gameState.player2.name;
+            document.getElementById('p2_cp').textContent = gameState.player2.cp;
+            document.getElementById('p2_primaryVp').textContent = gameState.player2.primaryVp;
+            document.getElementById('p2_totalVp').textContent = gameState.player2.totalVp;
+
+            renderPlayerSecondaries(1);
+            renderPlayerSecondaries(2);
+        }
+
+        function renderPlayerSecondaries(playerNum) {
+            const player = gameState[`player${playerNum}`];
+            const area = document.getElementById(`p${playerNum}_secondaries_area`);
+            area.innerHTML = '';
+
+            if (player.missionType === 'Fixed') {
+                // Render Fixed objectives UI
+                for (let i = 1; i <= 3; i++) {
+                    const secondaryKey = `secondary${i}`;
+                    const secondary = player[secondaryKey] || { name: 'Select Secondary...', score: 0 };
+                    const container = document.createElement('div');
+                    container.className = 'bg-gray-900 p-3 rounded-lg';
+                    container.innerHTML = `
+                        <span class="text-lg font-medium block mb-2">${i === 3 ? 'Challenger' : `Secondary ${i}`}</span>
+                        <select data-player="${playerNum}" data-secondary="${i}" class="secondary-select mb-2"></select>
+                        <div class="text-sm text-gray-400 p-2 my-2 bg-gray-800 rounded-md min-h-[60px]" data-desc="${i}"></div>
+                        <div class="space-y-2" data-tiers="${i}"></div>
+                        <div class="flex justify-between items-center mt-3">
+                            <span class="text-xl font-semibold">Score: <span id="p${playerNum}_sec${i}_score" class="font-bold">${secondary.score}</span></span>
+                            <button data-player="${playerNum}" data-secondary="${i}" class="bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold py-1 px-3 rounded op-clear-btn">Clear</button>
+                        </div>
+                    `;
+                    area.appendChild(container);
+                }
+            } else { // Tactical
+                // Render Tactical objectives UI
+                const container = document.createElement('div');
+                container.className = 'bg-gray-900 p-3 rounded-lg';
+                container.innerHTML = `
+                    <h3 class="text-xl font-bold text-center mb-2">Tactical Missions</h3>
+                    <div id="p${playerNum}_active_mission" class="bg-gray-800 p-3 rounded-md min-h-[100px] mb-3"></div>
+                    <button data-player="${playerNum}" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded draw-tactical-btn">Draw Tactical Mission</button>
+                `;
+                area.appendChild(container);
+            }
         }
         
         async function handleStartGame() {
@@ -228,22 +273,17 @@ const firebaseConfig = {
             const p2_missions = document.querySelector('#setup_p2_missions .toggle-btn-active').dataset.mission;
 
             const payload = {
-                'gameState.player1.name': p1_name,
-                'gameState.player1.faction': p1_faction,
-                'gameState.player1.detachment': p1_detachment,
-                'gameState.player1.role': p1_role,
-                'gameState.player1.missionType': p1_missions,
-                'gameState.player2.name': p2_name,
-                'gameState.player2.faction': p2_faction,
-                'gameState.player2.detachment': p2_detachment,
-                'gameState.player2.role': p2_role,
-                'gameState.player2.missionType': p2_missions,
+                'gameState.player1.name': p1_name, 'gameState.player1.faction': p1_faction, 'gameState.player1.detachment': p1_detachment, 'gameState.player1.role': p1_role, 'gameState.player1.missionType': p1_missions,
+                'gameState.player2.name': p2_name, 'gameState.player2.faction': p2_faction, 'gameState.player2.detachment': p2_detachment, 'gameState.player2.role': p2_role, 'gameState.player2.missionType': p2_missions,
                 'gameState.setupComplete': true
             };
             await updateDoc(appDocRef, payload);
         }
 
-        // --- Main Init Function ---
+        async function handleBackToSetup() {
+            await updateDoc(appDocRef, { 'gameState.setupComplete': false });
+        }
+
         async function init() {
             try {
                 await signInAnonymously(auth);
@@ -252,13 +292,11 @@ const firebaseConfig = {
 
                 const appDocSnap = await getDoc(appDocRef);
                 if (!appDocSnap.exists()) {
-                    // Create the document with a full default structure
                     const initialData = {
                         gameState: {
-                            setupComplete: false,
-                            turn: 1,
-                            player1: { name: "Player 1", faction: "", detachment: "", role: "Attacker", missionType: "Fixed", cp: 0, primaryVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical: null },
-                            player2: { name: "Player 2", faction: "", detachment: "", role: "Defender", missionType: "Fixed", cp: 0, primaryVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical: null }
+                            setupComplete: false, turn: 1,
+                            player1: { name: "Player 1", faction: "", detachment: "", role: "Attacker", missionType: "Fixed", cp: 0, primaryVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0}, secondary3: {name: "Select Secondary...", score: 0} },
+                            player2: { name: "Player 2", faction: "", detachment: "", role: "Defender", missionType: "Fixed", cp: 0, primaryVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0}, secondary3: {name: "Select Secondary...", score: 0} }
                         },
                         fixed_objectives: [ { name: "Example Fixed", description: "Score points.", scoring_tiers: [{ label: "+5 VP", vp: 5 }] } ],
                         tactical_objectives: [ { id: 1, name: "Example Tactical", description: "Score points.", scoring_tiers: [{ label: "+3 VP", vp: 3 }] } ]
@@ -272,33 +310,22 @@ const firebaseConfig = {
                     }
                 });
 
-                // --- Event Listeners ---
                 startGameBtn.addEventListener('click', handleStartGame);
+                backToSetupBtn.addEventListener('click', handleBackToSetup);
                 
-                // Toggle button logic
                 document.querySelectorAll('.toggle-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
                         const parent = btn.parentElement;
-                        parent.querySelectorAll('.toggle-btn').forEach(b => {
-                            b.classList.remove('toggle-btn-active');
-                            b.classList.add('toggle-btn-inactive');
-                        });
-                        btn.classList.add('toggle-btn-active');
-                        btn.classList.remove('toggle-btn-inactive');
+                        parent.querySelectorAll('.toggle-btn').forEach(b => b.classList.replace('toggle-btn-active', 'toggle-btn-inactive'));
+                        btn.classList.replace('toggle-btn-inactive', 'toggle-btn-active');
 
-                        // Auto-swap attacker/defender
                         if (parent.id.includes('role')) {
                            const otherPlayer = btn.dataset.player === '1' ? '2' : '1';
                            const otherRole = btn.dataset.role === 'Attacker' ? 'Defender' : 'Attacker';
                            const otherParent = document.getElementById(`setup_p${otherPlayer}_role`);
                            otherParent.querySelectorAll('.toggle-btn').forEach(b => {
-                               if (b.dataset.role === otherRole) {
-                                   b.classList.add('toggle-btn-active');
-                                   b.classList.remove('toggle-btn-inactive');
-                               } else {
-                                   b.classList.remove('toggle-btn-active');
-                                   b.classList.add('toggle-btn-inactive');
-                               }
+                               if (b.dataset.role === otherRole) b.classList.replace('toggle-btn-inactive', 'toggle-btn-active');
+                               else b.classList.replace('toggle-btn-active', 'toggle-btn-inactive');
                            });
                         }
                     });
