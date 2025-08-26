@@ -13,20 +13,94 @@
         .btn-red { @apply bg-red-500 text-white; }
         .secondary-select { @apply w-full bg-gray-700 text-white p-2 rounded-md border border-gray-600; }
         .tier-btn { @apply w-full text-left p-2 rounded-md bg-sky-600 hover:bg-sky-500 text-white transition-colors duration-150 active:scale-[0.98]; }
+        .toggle-label { @apply block text-gray-400 text-sm; }
+        .toggle-btn { @apply px-4 py-2 rounded-md font-semibold; }
+        .toggle-btn-active { @apply bg-sky-600 text-white; }
+        .toggle-btn-inactive { @apply bg-gray-700 text-gray-300; }
     </style>
 </head>
 <body class="bg-gray-900 text-white p-4 md:p-6">
 
-    <div class="max-w-4xl mx-auto">
+    <!-- Page 1: Setup -->
+    <div id="setupPage" class="max-w-4xl mx-auto">
+        <header class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-yellow-400">Game Setup</h1>
+        </header>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Player 1 Setup -->
+            <div class="bg-gray-800 p-4 rounded-lg space-y-4">
+                <h2 class="text-2xl font-bold text-center">Player 1</h2>
+                <input type="text" id="setup_p1_name" class="w-full bg-gray-700 text-white p-2 rounded-md text-xl text-center" placeholder="Player 1 Name">
+                <input type="text" id="setup_p1_faction" class="w-full bg-gray-700 text-white p-2 rounded-md text-center" placeholder="Faction">
+                <input type="text" id="setup_p1_detachment" class="w-full bg-gray-700 text-white p-2 rounded-md text-center" placeholder="Detachment">
+                <div class="grid grid-cols-2 gap-2 text-center">
+                    <div>
+                        <span class="toggle-label">Role</span>
+                        <div id="setup_p1_role" class="flex rounded-md bg-gray-700 p-1">
+                            <button data-player="1" data-role="Attacker" class="w-1/2 toggle-btn toggle-btn-active">Attacker</button>
+                            <button data-player="1" data-role="Defender" class="w-1/2 toggle-btn toggle-btn-inactive">Defender</button>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="toggle-label">Missions</span>
+                         <div id="setup_p1_missions" class="flex rounded-md bg-gray-700 p-1">
+                            <button data-player="1" data-mission="Fixed" class="w-1/2 toggle-btn toggle-btn-active">Fixed</button>
+                            <button data-player="1" data-mission="Tactical" class="w-1/2 toggle-btn toggle-btn-inactive">Tactical</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Player 2 Setup -->
+            <div class="bg-gray-800 p-4 rounded-lg space-y-4">
+                <h2 class="text-2xl font-bold text-center">Player 2</h2>
+                <input type="text" id="setup_p2_name" class="w-full bg-gray-700 text-white p-2 rounded-md text-xl text-center" placeholder="Player 2 Name">
+                <input type="text" id="setup_p2_faction" class="w-full bg-gray-700 text-white p-2 rounded-md text-center" placeholder="Faction">
+                <input type="text" id="setup_p2_detachment" class="w-full bg-gray-700 text-white p-2 rounded-md text-center" placeholder="Detachment">
+                 <div class="grid grid-cols-2 gap-2 text-center">
+                    <div>
+                        <span class="toggle-label">Role</span>
+                        <div id="setup_p2_role" class="flex rounded-md bg-gray-700 p-1">
+                            <button data-player="2" data-role="Attacker" class="w-1/2 toggle-btn toggle-btn-inactive">Attacker</button>
+                            <button data-player="2" data-role="Defender" class="w-1/2 toggle-btn toggle-btn-active">Defender</button>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="toggle-label">Missions</span>
+                         <div id="setup_p2_missions" class="flex rounded-md bg-gray-700 p-1">
+                            <button data-player="2" data-mission="Fixed" class="w-1/2 toggle-btn toggle-btn-active">Fixed</button>
+                            <button data-player="2" data-mission="Tactical" class="w-1/2 toggle-btn toggle-btn-inactive">Tactical</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="text-center mt-8">
+            <button id="startGameBtn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8 rounded-lg text-xl">Start Game</button>
+        </div>
+    </div>
+
+    <!-- Page 2: Scoreboard -->
+    <div id="scoreboardPage" class="max-w-4xl mx-auto hidden">
         <header class="text-center mb-6">
             <h1 class="text-3xl font-bold text-yellow-400">40k Stream Controller</h1>
         </header>
-
-        <!-- Player Panels -->
+        <!-- Game State Controls -->
+        <div class="bg-gray-800 p-4 rounded-lg mb-6 flex flex-col items-center">
+            <h2 class="text-2xl font-semibold mb-4">Game State</h2>
+            <div class="flex items-center space-x-4">
+                <button id="prevTurnBtn" class="btn btn-red">-</button>
+                <div class="text-center">
+                    <div class="text-lg text-gray-400">Turn</div>
+                    <div id="turn" class="text-5xl font-bold">1</div>
+                </div>
+                <button id="nextTurnBtn" class="btn btn-green">+</button>
+            </div>
+        </div>
+        <!-- Player Scoreboard Panels -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Player 1 -->
+            <!-- Player 1 Scoreboard -->
             <div id="player1" class="bg-gray-800 p-4 rounded-lg space-y-4">
-                <input type="text" id="p1_name" class="w-full bg-gray-700 text-white p-2 rounded-md text-2xl font-bold text-center" value="Player 1">
+                <div id="p1_name" class="text-2xl font-bold text-center"></div>
                 <div class="flex items-center justify-between bg-gray-900 p-3 rounded-lg">
                     <span class="text-xl font-semibold">Primary VP</span>
                     <div class="flex items-center space-x-3">
@@ -43,47 +117,17 @@
                         <button data-player="1" data-field="cp" class="btn btn-green op-btn">+</button>
                     </div>
                 </div>
-                <div class="space-y-3">
-                    <div class="bg-gray-900 p-3 rounded-lg">
-                        <span class="text-lg font-medium block mb-2">Secondary 1</span>
-                        <select data-player="1" data-secondary="1" class="secondary-select mb-2"></select>
-                        <div class="text-sm text-gray-400 p-2 my-2 bg-gray-800 rounded-md min-h-[60px]" data-player="1" data-desc="1"></div>
-                        <div class="space-y-2" data-player="1" data-tiers="1"></div>
-                        <div class="flex justify-between items-center mt-3">
-                            <span class="text-xl font-semibold">Score: <span id="p1_sec1_score" class="font-bold">0</span></span>
-                            <button data-player="1" data-secondary="1" class="bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold py-1 px-3 rounded op-clear-btn">Clear</button>
-                        </div>
-                    </div>
-                    <div class="bg-gray-900 p-3 rounded-lg">
-                        <span class="text-lg font-medium block mb-2">Secondary 2</span>
-                        <select data-player="1" data-secondary="2" class="secondary-select mb-2"></select>
-                        <div class="text-sm text-gray-400 p-2 my-2 bg-gray-800 rounded-md min-h-[60px]" data-player="1" data-desc="2"></div>
-                        <div class="space-y-2" data-player="1" data-tiers="2"></div>
-                        <div class="flex justify-between items-center mt-3">
-                            <span class="text-xl font-semibold">Score: <span id="p1_sec2_score" class="font-bold">0</span></span>
-                            <button data-player="1" data-secondary="2" class="bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold py-1 px-3 rounded op-clear-btn">Clear</button>
-                        </div>
-                    </div>
-                    <div class="bg-gray-900 p-3 rounded-lg">
-                        <span class="text-lg font-medium block mb-2">Challenger</span>
-                        <select data-player="1" data-secondary="3" class="secondary-select mb-2"></select>
-                        <div class="text-sm text-gray-400 p-2 my-2 bg-gray-800 rounded-md min-h-[60px]" data-player="1" data-desc="3"></div>
-                        <div class="space-y-2" data-player="1" data-tiers="3"></div>
-                        <div class="flex justify-between items-center mt-3">
-                            <span class="text-xl font-semibold">Score: <span id="p1_sec3_score" class="font-bold">0</span></span>
-                            <button data-player="1" data-secondary="3" class="bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold py-1 px-3 rounded op-clear-btn">Clear</button>
-                        </div>
-                    </div>
-                </div>
+                <!-- Player 1 Secondary Area -->
+                <div id="p1_secondaries_area" class="space-y-3"></div>
                 <div class="text-center bg-gray-900 p-3 rounded-lg">
                     <div class="text-lg text-gray-400">Total Score</div>
                     <div id="p1_totalVp" class="text-5xl font-bold text-yellow-400">0</div>
                 </div>
             </div>
-            <!-- Player 2 -->
+            <!-- Player 2 Scoreboard -->
             <div id="player2" class="bg-gray-800 p-4 rounded-lg space-y-4">
-                <input type="text" id="p2_name" class="w-full bg-gray-700 text-white p-2 rounded-md text-2xl font-bold text-center" value="Player 2">
-                <div class="flex items-center justify-between bg-gray-900 p-3 rounded-lg">
+                <div id="p2_name" class="text-2xl font-bold text-center"></div>
+                 <div class="flex items-center justify-between bg-gray-900 p-3 rounded-lg">
                     <span class="text-xl font-semibold">Primary VP</span>
                     <div class="flex items-center space-x-3">
                         <button data-player="2" data-field="primaryVp" class="btn btn-red op-btn">-</button>
@@ -99,38 +143,8 @@
                         <button data-player="2" data-field="cp" class="btn btn-green op-btn">+</button>
                     </div>
                 </div>
-                <div class="space-y-3">
-                    <div class="bg-gray-900 p-3 rounded-lg">
-                        <span class="text-lg font-medium block mb-2">Secondary 1</span>
-                        <select data-player="2" data-secondary="1" class="secondary-select mb-2"></select>
-                        <div class="text-sm text-gray-400 p-2 my-2 bg-gray-800 rounded-md min-h-[60px]" data-player="2" data-desc="1"></div>
-                        <div class="space-y-2" data-player="2" data-tiers="1"></div>
-                        <div class="flex justify-between items-center mt-3">
-                            <span class="text-xl font-semibold">Score: <span id="p2_sec1_score" class="font-bold">0</span></span>
-                            <button data-player="2" data-secondary="1" class="bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold py-1 px-3 rounded op-clear-btn">Clear</button>
-                        </div>
-                    </div>
-                    <div class="bg-gray-900 p-3 rounded-lg">
-                        <span class="text-lg font-medium block mb-2">Secondary 2</span>
-                        <select data-player="2" data-secondary="2" class="secondary-select mb-2"></select>
-                        <div class="text-sm text-gray-400 p-2 my-2 bg-gray-800 rounded-md min-h-[60px]" data-player="2" data-desc="2"></div>
-                        <div class="space-y-2" data-player="2" data-tiers="2"></div>
-                        <div class="flex justify-between items-center mt-3">
-                            <span class="text-xl font-semibold">Score: <span id="p2_sec2_score" class="font-bold">0</span></span>
-                            <button data-player="2" data-secondary="2" class="bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold py-1 px-3 rounded op-clear-btn">Clear</button>
-                        </div>
-                    </div>
-                    <div class="bg-gray-900 p-3 rounded-lg">
-                        <span class="text-lg font-medium block mb-2">Challenger</span>
-                        <select data-player="2" data-secondary="3" class="secondary-select mb-2"></select>
-                        <div class="text-sm text-gray-400 p-2 my-2 bg-gray-800 rounded-md min-h-[60px]" data-player="2" data-desc="3"></div>
-                        <div class="space-y-2" data-player="2" data-tiers="3"></div>
-                        <div class="flex justify-between items-center mt-3">
-                            <span class="text-xl font-semibold">Score: <span id="p2_sec3_score" class="font-bold">0</span></span>
-                            <button data-player="2" data-secondary="3" class="bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold py-1 px-3 rounded op-clear-btn">Clear</button>
-                        </div>
-                    </div>
-                </div>
+                <!-- Player 2 Secondary Area -->
+                <div id="p2_secondaries_area" class="space-y-3"></div>
                 <div class="text-center bg-gray-900 p-3 rounded-lg">
                     <div class="text-lg text-gray-400">Total Score</div>
                     <div id="p2_totalVp" class="text-5xl font-bold text-yellow-400">0</div>
@@ -147,19 +161,15 @@
         import { getFirestore, doc, getDoc, setDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // ==================================================================
-        // === 1. PASTE YOUR FIREBASE CONFIGURATION HERE ===
-        // ==================================================================
-const firebaseConfig = {
-  apiKey: "AIzaSyAlhqPMvqP1MO_sV_jIXf7jrrm1MJtL2aI",
-  authDomain: "wtwg-streaming.firebaseapp.com",
-  projectId: "wtwg-streaming",
-  storageBucket: "wtwg-streaming.firebasestorage.app",
-  messagingSenderId: "889956031791",
-  appId: "1:889956031791:web:d9292c951c8270f6abd5da",
-  measurementId: "G-5T9HMW7DMX"
-};
-        // ==================================================================
+        const firebaseConfig = {
+          apiKey: "AIza...",
+          authDomain: "wtwg-streaming.firebaseapp.com",
+          projectId: "wtwg-streaming",
+          storageBucket: "wtwg-streaming.appspot.com",
+          messagingSenderId: "889956031791",
+          appId: "1:889956031791:web:d9292c951c8270f6abd5da",
+          measurementId: "G-5T9HMW7DMX"
+        };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -167,175 +177,93 @@ const firebaseConfig = {
 
         let gameState = {};
         let appDocRef;
-        let allSecondaries = [];
+        let fixedObjectives = [];
+        let tacticalObjectives = [];
 
-        function populateSecondariesDropdowns(objectives) {
-            const selects = document.querySelectorAll('.secondary-select');
-            selects.forEach(select => {
-                select.innerHTML = ''; 
-                const defaultOption = document.createElement('option');
-                defaultOption.value = "Select Secondary...";
-                defaultOption.textContent = "Select Secondary...";
-                select.appendChild(defaultOption);
-                objectives.forEach(obj => {
-                    const option = document.createElement('option');
-                    option.value = obj.name;
-                    option.textContent = obj.name;
-                    select.appendChild(option);
-                });
-            });
+        // --- Page Elements ---
+        const setupPage = document.getElementById('setupPage');
+        const scoreboardPage = document.getElementById('scoreboardPage');
+        const startGameBtn = document.getElementById('startGameBtn');
+
+        // --- Logic for Page Switching ---
+        function showScoreboard() {
+            setupPage.classList.add('hidden');
+            scoreboardPage.classList.remove('hidden');
         }
 
-        function renderSecondaryControls(player, secondaryNum, secondaryName) {
-            const descEl = document.querySelector(`[data-player="${player}"][data-desc="${secondaryNum}"]`);
-            const tiersEl = document.querySelector(`[data-player="${player}"][data-tiers="${secondaryNum}"]`);
-            descEl.innerHTML = '';
-            tiersEl.innerHTML = '';
-            if (!secondaryName || secondaryName === "Select Secondary...") {
-                descEl.textContent = 'No secondary selected.';
-                return;
-            }
-            const secondaryData = allSecondaries.find(s => s.name === secondaryName);
-            if (!secondaryData) {
-                descEl.textContent = 'Error: Could not find data for this secondary.';
-                return;
-            }
-            descEl.innerHTML = `<p>${secondaryData.description || ''}</p>${secondaryData.when_drawn ? `<p class="mt-1 italic">${secondaryData.when_drawn}</p>` : ''}`;
-            secondaryData.scoring_tiers.forEach(tier => {
-                const button = document.createElement('button');
-                button.className = 'tier-btn';
-                button.textContent = `+${tier.vp} VP: ${tier.label}`;
-                button.onclick = () => addSecondaryScore(player, secondaryNum, tier.vp);
-                tiersEl.appendChild(button);
-            });
+        function showSetup() {
+            scoreboardPage.classList.add('hidden');
+            setupPage.classList.remove('hidden');
         }
 
+        // --- UI Update Logic ---
         function updateUI(data) {
             if (!data || !data.gameState) return;
             gameState = data.gameState;
-            allSecondaries = data.objective_list || [];
-            populateSecondariesDropdowns(allSecondaries);
-            document.getElementById('turn').textContent = gameState.turn;
-            document.getElementById('p1_name').value = gameState.player1.name;
-            document.getElementById('p1_cp').textContent = gameState.player1.cp;
-            document.getElementById('p1_primaryVp').textContent = gameState.player1.primaryVp;
-            document.querySelector('[data-player="1"][data-secondary="1"]').value = gameState.player1.secondary1.name;
-            document.getElementById('p1_sec1_score').textContent = gameState.player1.secondary1.score;
-            document.querySelector('[data-player="1"][data-secondary="2"]').value = gameState.player1.secondary2.name;
-            document.getElementById('p1_sec2_score').textContent = gameState.player1.secondary2.score;
-            document.querySelector('[data-player="1"][data-secondary="3"]').value = gameState.player1.secondary3.name;
-            document.getElementById('p1_sec3_score').textContent = gameState.player1.secondary3.score;
-            document.getElementById('p1_totalVp').textContent = gameState.player1.totalVp;
-            document.getElementById('p2_name').value = gameState.player2.name;
-            document.getElementById('p2_cp').textContent = gameState.player2.cp;
-            document.getElementById('p2_primaryVp').textContent = gameState.player2.primaryVp;
-            document.querySelector('[data-player="2"][data-secondary="1"]').value = gameState.player2.secondary1.name;
-            document.getElementById('p2_sec1_score').textContent = gameState.player2.secondary1.score;
-            document.querySelector('[data-player="2"][data-secondary="2"]').value = gameState.player2.secondary2.name;
-            document.getElementById('p2_sec2_score').textContent = gameState.player2.secondary2.score;
-            document.querySelector('[data-player="2"][data-secondary="3"]').value = gameState.player2.secondary3.name;
-            document.getElementById('p2_sec3_score').textContent = gameState.player2.secondary3.score;
-            document.getElementById('p2_totalVp').textContent = gameState.player2.totalVp;
-            renderSecondaryControls(1, 1, gameState.player1.secondary1.name);
-            renderSecondaryControls(1, 2, gameState.player1.secondary2.name);
-            renderSecondaryControls(1, 3, gameState.player1.secondary3.name);
-            renderSecondaryControls(2, 1, gameState.player2.secondary1.name);
-            renderSecondaryControls(2, 2, gameState.player2.secondary2.name);
-            renderSecondaryControls(2, 3, gameState.player2.secondary3.name);
-        }
-
-        function calculateTotals() {
-            gameState.player1.totalVp = gameState.player1.primaryVp + gameState.player1.secondary1.score + gameState.player1.secondary2.score + gameState.player1.secondary3.score;
-            gameState.player2.totalVp = gameState.player2.primaryVp + gameState.player2.secondary1.score + gameState.player2.secondary2.score + gameState.player2.secondary3.score;
-        }
-
-        async function updateFirestore(payload) {
-            calculateTotals();
-            const fullPayload = { ...payload };
-            fullPayload['gameState.player1.totalVp'] = gameState.player1.totalVp;
-            fullPayload['gameState.player2.totalVp'] = gameState.player2.totalVp;
-            await updateDoc(appDocRef, fullPayload);
-        }
-
-        async function addSecondaryScore(player, secondaryNum, vpToAdd) {
-            const key = `gameState.player${player}.secondary${secondaryNum}.score`;
-            const currentScore = gameState[`player${player}`][`secondary${secondaryNum}`].score;
-            gameState[`player${player}`][`secondary${secondaryNum}`].score = currentScore + vpToAdd;
-            await updateFirestore({ [key]: currentScore + vpToAdd });
-        }
-
-        async function handleOperation(e) {
-            const target = e.target.closest('.op-btn');
-            if (!target) return;
-            const player = target.dataset.player;
-            const field = target.dataset.field;
-            const isIncrement = target.classList.contains('btn-green');
-            const key = `gameState.player${player}.${field}`;
-            const currentValue = gameState[`player${player}`][field];
-            const newValue = isIncrement ? currentValue + 1 : Math.max(0, currentValue - 1);
-            gameState[`player${player}`][field] = newValue;
-            await updateFirestore({ [key]: newValue });
-        }
-
-        async function handleClearSecondary(e) {
-            const target = e.target.closest('.op-clear-btn');
-            if (!target) return;
-            const player = target.dataset.player;
-            const secondaryNum = target.dataset.secondary;
-            const key = `gameState.player${player}.secondary${secondaryNum}.score`;
-            gameState[`player${player}`][`secondary${secondaryNum}`].score = 0;
-            await updateFirestore({ [key]: 0 });
-        }
-
-        async function handleNameChange(e) {
-            const player = e.target.id.includes('p1') ? '1' : '2';
-            const key = `gameState.player${player}.name`;
-            await updateFirestore({ [key]: e.target.value });
-        }
-
-        async function handleSecondaryChange(e) {
-            const player = e.target.dataset.player;
-            const secondaryNum = e.target.dataset.secondary;
-            const key = `gameState.player${player}.secondary${secondaryNum}.name`;
-            await updateFirestore({ [key]: e.target.value });
-        }
-
-        async function handleTurnChange(increment) {
-            let newTurn = increment ? gameState.turn + 1 : Math.max(1, gameState.turn - 1);
-            await updateFirestore({ 'gameState.turn': newTurn });
-        }
-
-        async function resetGame() {
-            if (confirm("Are you sure you want to reset the entire game state?")) {
-                const initialData = getInitialData();
-                await setDoc(appDocRef, initialData);
+            fixedObjectives = data.fixed_objectives || [];
+            tacticalObjectives = data.tactical_objectives || [];
+            
+            if (!gameState.setupComplete) {
+                showSetup();
+                return;
             }
-        }
+            showScoreboard();
 
-        function getInitialData() {
-             return {
-                gameState: {
-                    turn: 1,
-                    player1: { name: "Player 1", cp: 0, primaryVp: 0, totalVp: 0, secondary1: { name: "Select Secondary...", score: 0 }, secondary2: { name: "Select Secondary...", score: 0 }, secondary3: { name: "Select Secondary...", score: 0 } },
-                    player2: { name: "Player 2", cp: 0, primaryVp: 0, totalVp: 0, secondary1: { name: "Select Secondary...", score: 0 }, secondary2: { name: "Select Secondary...", score: 0 }, secondary3: { name: "Select Secondary...", score: 0 } }
-                },
-                objective_list: [
-                    { "name": "BEHIND ENEMY LINES", "description": "Break through and cut off escape routes.", "when_drawn": "In the first round, you can redraw this.", "scoring_tiers": [{ "label": "One unit in opponent's zone", "vp": 3 }, { "label": "Two+ units in opponent's zone", "vp": 4 }] },
-                    { "name": "CLEANSE", "description": "Cleanse objectives to score points.", "scoring_tiers": [{ "label": "+1 VP per objective cleansed", "vp": 1 }] }
-                ]
+            // Populate scoreboard
+            document.getElementById('turn').textContent = gameState.turn;
+            // ... (rest of the scoreboard UI update logic will go here)
+        }
+        
+        async function handleStartGame() {
+            const p1_name = document.getElementById('setup_p1_name').value || "Player 1";
+            const p1_faction = document.getElementById('setup_p1_faction').value;
+            const p1_detachment = document.getElementById('setup_p1_detachment').value;
+            const p1_role = document.querySelector('#setup_p1_role .toggle-btn-active').dataset.role;
+            const p1_missions = document.querySelector('#setup_p1_missions .toggle-btn-active').dataset.mission;
+
+            const p2_name = document.getElementById('setup_p2_name').value || "Player 2";
+            const p2_faction = document.getElementById('setup_p2_faction').value;
+            const p2_detachment = document.getElementById('setup_p2_detachment').value;
+            const p2_role = document.querySelector('#setup_p2_role .toggle-btn-active').dataset.role;
+            const p2_missions = document.querySelector('#setup_p2_missions .toggle-btn-active').dataset.mission;
+
+            const payload = {
+                'gameState.player1.name': p1_name,
+                'gameState.player1.faction': p1_faction,
+                'gameState.player1.detachment': p1_detachment,
+                'gameState.player1.role': p1_role,
+                'gameState.player1.missionType': p1_missions,
+                'gameState.player2.name': p2_name,
+                'gameState.player2.faction': p2_faction,
+                'gameState.player2.detachment': p2_detachment,
+                'gameState.player2.role': p2_role,
+                'gameState.player2.missionType': p2_missions,
+                'gameState.setupComplete': true
             };
+            await updateDoc(appDocRef, payload);
         }
 
+        // --- Main Init Function ---
         async function init() {
             try {
                 await signInAnonymously(auth);
-                const docId = "warhammer-game-data"; // A fixed, simple ID
+                const docId = "warhammer-game-data";
                 appDocRef = doc(db, "gamedata", docId);
 
                 const appDocSnap = await getDoc(appDocRef);
                 if (!appDocSnap.exists()) {
-                    console.log("First time setup: Creating new app document in Firebase.");
-                    await setDoc(appDocRef, getInitialData());
+                    // Create the document with a full default structure
+                    const initialData = {
+                        gameState: {
+                            setupComplete: false,
+                            turn: 1,
+                            player1: { name: "Player 1", faction: "", detachment: "", role: "Attacker", missionType: "Fixed", cp: 0, primaryVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical: null },
+                            player2: { name: "Player 2", faction: "", detachment: "", role: "Defender", missionType: "Fixed", cp: 0, primaryVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical: null }
+                        },
+                        fixed_objectives: [ { name: "Example Fixed", description: "Score points.", scoring_tiers: [{ label: "+5 VP", vp: 5 }] } ],
+                        tactical_objectives: [ { id: 1, name: "Example Tactical", description: "Score points.", scoring_tiers: [{ label: "+3 VP", vp: 3 }] } ]
+                    };
+                    await setDoc(appDocRef, initialData);
                 }
 
                 onSnapshot(appDocRef, (docSnap) => {
@@ -344,13 +272,37 @@ const firebaseConfig = {
                     }
                 });
 
-                document.body.addEventListener('click', (e) => { handleOperation(e); handleClearSecondary(e); });
-                document.getElementById('p1_name').addEventListener('change', handleNameChange);
-                document.getElementById('p2_name').addEventListener('change', handleNameChange);
-                document.querySelectorAll('.secondary-select').forEach(sel => sel.addEventListener('change', handleSecondaryChange));
-                document.getElementById('nextTurnBtn').addEventListener('click', () => handleTurnChange(true));
-                document.getElementById('prevTurnBtn').addEventListener('click', () => handleTurnChange(false));
-                document.getElementById('resetGameBtn').addEventListener('click', resetGame);
+                // --- Event Listeners ---
+                startGameBtn.addEventListener('click', handleStartGame);
+                
+                // Toggle button logic
+                document.querySelectorAll('.toggle-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const parent = btn.parentElement;
+                        parent.querySelectorAll('.toggle-btn').forEach(b => {
+                            b.classList.remove('toggle-btn-active');
+                            b.classList.add('toggle-btn-inactive');
+                        });
+                        btn.classList.add('toggle-btn-active');
+                        btn.classList.remove('toggle-btn-inactive');
+
+                        // Auto-swap attacker/defender
+                        if (parent.id.includes('role')) {
+                           const otherPlayer = btn.dataset.player === '1' ? '2' : '1';
+                           const otherRole = btn.dataset.role === 'Attacker' ? 'Defender' : 'Attacker';
+                           const otherParent = document.getElementById(`setup_p${otherPlayer}_role`);
+                           otherParent.querySelectorAll('.toggle-btn').forEach(b => {
+                               if (b.dataset.role === otherRole) {
+                                   b.classList.add('toggle-btn-active');
+                                   b.classList.remove('toggle-btn-inactive');
+                               } else {
+                                   b.classList.remove('toggle-btn-active');
+                                   b.classList.add('toggle-btn-inactive');
+                               }
+                           });
+                        }
+                    });
+                });
 
             } catch (error) {
                 console.error("A critical error occurred during initialization:", error);
