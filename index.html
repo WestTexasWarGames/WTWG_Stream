@@ -228,7 +228,6 @@
             area.innerHTML = '';
 
             if (player.missionType === 'Fixed') {
-                // Render Fixed objectives UI
                 for (let i = 1; i <= 3; i++) {
                     const secondaryKey = `secondary${i}`;
                     const secondary = player[secondaryKey] || { name: 'Select Secondary...', score: 0 };
@@ -247,7 +246,6 @@
                     area.appendChild(container);
                 }
             } else { // Tactical
-                // Render Tactical objectives UI
                 const container = document.createElement('div');
                 container.className = 'bg-gray-900 p-3 rounded-lg';
                 container.innerHTML = `
@@ -315,17 +313,28 @@
                 
                 document.querySelectorAll('.toggle-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
+                        if (btn.classList.contains('toggle-btn-active')) return;
+
                         const parent = btn.parentElement;
-                        parent.querySelectorAll('.toggle-btn').forEach(b => b.classList.replace('toggle-btn-active', 'toggle-btn-inactive'));
-                        btn.classList.replace('toggle-btn-inactive', 'toggle-btn-active');
+                        parent.querySelectorAll('.toggle-btn').forEach(b => {
+                            b.classList.remove('toggle-btn-active');
+                            b.classList.add('toggle-btn-inactive');
+                        });
+                        btn.classList.add('toggle-btn-active');
+                        btn.classList.remove('toggle-btn-inactive');
 
                         if (parent.id.includes('role')) {
                            const otherPlayer = btn.dataset.player === '1' ? '2' : '1';
                            const otherRole = btn.dataset.role === 'Attacker' ? 'Defender' : 'Attacker';
                            const otherParent = document.getElementById(`setup_p${otherPlayer}_role`);
                            otherParent.querySelectorAll('.toggle-btn').forEach(b => {
-                               if (b.dataset.role === otherRole) b.classList.replace('toggle-btn-inactive', 'toggle-btn-active');
-                               else b.classList.replace('toggle-btn-active', 'toggle-btn-inactive');
+                               if (b.dataset.role === otherRole) {
+                                   b.classList.add('toggle-btn-active');
+                                   b.classList.remove('toggle-btn-inactive');
+                               } else {
+                                   b.classList.remove('toggle-btn-active');
+                                   b.classList.add('toggle-btn-inactive');
+                               }
                            });
                         }
                     });
