@@ -14,8 +14,8 @@
         .secondary-select { @apply w-full bg-gray-700 text-white p-2 rounded-md border border-gray-600; }
         .tier-btn { @apply w-full text-left p-2 rounded-md bg-sky-600 hover:bg-sky-500 text-white transition-colors duration-150 active:scale-[0.98]; }
         .toggle-label { @apply block text-gray-400 text-sm; }
-        .toggle-btn { @apply px-4 py-2 rounded-md font-semibold; }
-        .toggle-btn-active { @apply bg-sky-600 text-white; }
+        .toggle-btn { @apply px-4 py-2 rounded-md font-semibold transition-colors; }
+        .toggle-btn-active { @apply bg-sky-600 text-white ring-2 ring-sky-400; }
         .toggle-btn-inactive { @apply bg-gray-700 text-gray-300; }
     </style>
 </head>
@@ -49,6 +49,11 @@
                         </div>
                     </div>
                 </div>
+                <div id="setup_p1_fixed_missions" class="space-y-2">
+                    <select id="setup_p1_sec1" class="secondary-select"></select>
+                    <select id="setup_p1_sec2" class="secondary-select"></select>
+                    <select id="setup_p1_sec3" class="secondary-select"></select>
+                </div>
             </div>
             <!-- Player 2 Setup -->
             <div class="bg-gray-800 p-4 rounded-lg space-y-4">
@@ -71,6 +76,11 @@
                             <button data-player="2" data-mission="Tactical" class="w-1/2 toggle-btn toggle-btn-inactive">Tactical</button>
                         </div>
                     </div>
+                </div>
+                <div id="setup_p2_fixed_missions" class="space-y-2">
+                    <select id="setup_p2_sec1" class="secondary-select"></select>
+                    <select id="setup_p2_sec2" class="secondary-select"></select>
+                    <select id="setup_p2_sec3" class="secondary-select"></select>
                 </div>
             </div>
         </div>
@@ -204,6 +214,7 @@
             
             if (!gameState.setupComplete) {
                 showSetup();
+                populateSetupDropdowns(fixedObjectives);
                 return;
             }
             showScoreboard();
@@ -222,6 +233,23 @@
             renderPlayerSecondaries(2);
         }
 
+        function populateSetupDropdowns(objectives) {
+            const selects = document.querySelectorAll('#setupPage .secondary-select');
+            selects.forEach(select => {
+                select.innerHTML = '';
+                const defaultOption = document.createElement('option');
+                defaultOption.value = "Select Secondary...";
+                defaultOption.textContent = "Select Secondary...";
+                select.appendChild(defaultOption);
+                objectives.forEach(obj => {
+                    const option = document.createElement('option');
+                    option.value = obj.name;
+                    option.textContent = obj.name;
+                    select.appendChild(option);
+                });
+            });
+        }
+
         function renderPlayerSecondaries(playerNum) {
             const player = gameState[`player${playerNum}`];
             const area = document.getElementById(`p${playerNum}_secondaries_area`);
@@ -234,10 +262,10 @@
                     const container = document.createElement('div');
                     container.className = 'bg-gray-900 p-3 rounded-lg';
                     container.innerHTML = `
-                        <span class="text-lg font-medium block mb-2">${i === 3 ? 'Challenger' : `Secondary ${i}`}</span>
-                        <select data-player="${playerNum}" data-secondary="${i}" class="secondary-select mb-2"></select>
-                        <div class="text-sm text-gray-400 p-2 my-2 bg-gray-800 rounded-md min-h-[60px]" data-desc="${i}"></div>
-                        <div class="space-y-2" data-tiers="${i}"></div>
+                        <h3 class="text-lg font-bold mb-2">${secondary.name}</h3>
+                        <div class="space-y-2">
+                            <!-- Scoring buttons will be generated here -->
+                        </div>
                         <div class="flex justify-between items-center mt-3">
                             <span class="text-xl font-semibold">Score: <span id="p${playerNum}_sec${i}_score" class="font-bold">${secondary.score}</span></span>
                             <button data-player="${playerNum}" data-secondary="${i}" class="bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold py-1 px-3 rounded op-clear-btn">Clear</button>
@@ -275,11 +303,32 @@
                 'gameState.player2.name': p2_name, 'gameState.player2.faction': p2_faction, 'gameState.player2.detachment': p2_detachment, 'gameState.player2.role': p2_role, 'gameState.player2.missionType': p2_missions,
                 'gameState.setupComplete': true
             };
+
+            if (p1_missions === 'Fixed') {
+                payload['gameState.player1.secondary1.name'] = document.getElementById('setup_p1_sec1').value;
+                payload['gameState.player1.secondary2.name'] = document.getElementById('setup_p1_sec2').value;
+                payload['gameState.player1.secondary3.name'] = document.getElementById('setup_p1_sec3').value;
+            }
+             if (p2_missions === 'Fixed') {
+                payload['gameState.player2.secondary1.name'] = document.getElementById('setup_p2_sec1').value;
+                payload['gameState.player2.secondary2.name'] = document.getElementById('setup_p2_sec2').value;
+                payload['gameState.player2.secondary3.name'] = document.getElementById('setup_p2_sec3').value;
+            }
+
             await updateDoc(appDocRef, payload);
         }
 
         async function handleBackToSetup() {
             await updateDoc(appDocRef, { 'gameState.setupComplete': false });
+        }
+
+        function toggleFixedMissionView(playerNum, missionType) {
+            const fixedMissionsDiv = document.getElementById(`setup_p${playerNum}_fixed_missions`);
+            if (missionType === 'Fixed') {
+                fixedMissionsDiv.classList.remove('hidden');
+            } else {
+                fixedMissionsDiv.classList.add('hidden');
+            }
         }
 
         async function init() {
@@ -336,6 +385,10 @@
                                    b.classList.add('toggle-btn-inactive');
                                }
                            });
+                        }
+                        
+                        if (parent.id.includes('missions')) {
+                            toggleFixedMissionView(btn.dataset.player, btn.dataset.mission);
                         }
                     });
                 });
