@@ -254,8 +254,30 @@
         function updateUI(data) {
             if (!data || !data.gameState) return;
             gameState = data.gameState;
-            fixedObjectives = data.fixed_objectives || [];
-            tacticalObjectives = data.tactical_objectives || [];
+            
+            let fixedData = data.fixed_objectives || [];
+            if (typeof fixedData === 'string') {
+                try {
+                    fixedObjectives = JSON.parse(fixedData);
+                } catch (e) {
+                    console.error("Failed to parse fixed_objectives JSON string:", e);
+                    fixedObjectives = [];
+                }
+            } else {
+                fixedObjectives = fixedData;
+            }
+
+            let tacticalData = data.tactical_objectives || [];
+             if (typeof tacticalData === 'string') {
+                try {
+                    tacticalObjectives = JSON.parse(tacticalData);
+                } catch (e) {
+                    console.error("Failed to parse tactical_objectives JSON string:", e);
+                    tacticalObjectives = [];
+                }
+            } else {
+                tacticalObjectives = tacticalData;
+            }
             
             if (!gameState.setupComplete) {
                 showSetup();
@@ -306,7 +328,7 @@
             area.innerHTML = '';
 
             if (player.missionType === 'Fixed') {
-                for (let i = 1; i <= 2; i++) { 
+                for (let i = 1; i <= 2; i++) {
                     const secondaryKey = `secondary${i}`;
                     const secondary = player[secondaryKey] || { name: 'Not Selected', score: 0 };
                     const container = document.createElement('div');
