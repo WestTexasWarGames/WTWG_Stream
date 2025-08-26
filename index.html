@@ -254,31 +254,8 @@
         function updateUI(data) {
             if (!data || !data.gameState) return;
             gameState = data.gameState;
-
-            // FIXED: Check if the objectives are strings and parse them if needed.
-            let fixedData = data.fixed_objectives || [];
-            if (typeof fixedData === 'string') {
-                try {
-                    fixedObjectives = JSON.parse(fixedData);
-                } catch (e) {
-                    console.error("Failed to parse fixed_objectives JSON string:", e);
-                    fixedObjectives = [];
-                }
-            } else {
-                fixedObjectives = fixedData;
-            }
-
-            let tacticalData = data.tactical_objectives || [];
-             if (typeof tacticalData === 'string') {
-                try {
-                    tacticalObjectives = JSON.parse(tacticalData);
-                } catch (e) {
-                    console.error("Failed to parse tactical_objectives JSON string:", e);
-                    tacticalObjectives = [];
-                }
-            } else {
-                tacticalObjectives = tacticalData;
-            }
+            fixedObjectives = data.fixed_objectives || [];
+            tacticalObjectives = data.tactical_objectives || [];
             
             if (!gameState.setupComplete) {
                 showSetup();
@@ -329,7 +306,7 @@
             area.innerHTML = '';
 
             if (player.missionType === 'Fixed') {
-                for (let i = 1; i <= 2; i++) { // Only 2 fixed secondaries
+                for (let i = 1; i <= 2; i++) { 
                     const secondaryKey = `secondary${i}`;
                     const secondary = player[secondaryKey] || { name: 'Not Selected', score: 0 };
                     const container = document.createElement('div');
@@ -404,7 +381,6 @@
 
         function renderScoreSheet() {
             const content = document.getElementById('scoreSheetContent');
-            // ... Logic to build and render the score sheet table will go here ...
             content.innerHTML = `<p class="text-center">Score sheet coming soon!</p>`;
         }
 
