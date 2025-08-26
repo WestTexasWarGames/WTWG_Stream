@@ -17,6 +17,24 @@
         .toggle-btn { @apply px-4 py-2 rounded-md font-semibold transition-colors; }
         .toggle-btn-active { @apply bg-sky-600 text-white ring-2 ring-sky-400; }
         .toggle-btn-inactive { @apply bg-gray-700 text-gray-300; }
+        
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #scoreSheetModal, #scoreSheetModal * {
+                visibility: visible;
+            }
+            #scoreSheetModal {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+            .no-print {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white p-4 md:p-6">
@@ -52,7 +70,6 @@
                 <div id="setup_p1_fixed_missions" class="space-y-2">
                     <select id="setup_p1_sec1" class="secondary-select"></select>
                     <select id="setup_p1_sec2" class="secondary-select"></select>
-                    <select id="setup_p1_sec3" class="secondary-select"></select>
                 </div>
             </div>
             <!-- Player 2 Setup -->
@@ -80,7 +97,6 @@
                 <div id="setup_p2_fixed_missions" class="space-y-2">
                     <select id="setup_p2_sec1" class="secondary-select"></select>
                     <select id="setup_p2_sec2" class="secondary-select"></select>
-                    <select id="setup_p2_sec3" class="secondary-select"></select>
                 </div>
             </div>
         </div>
@@ -94,7 +110,6 @@
         <header class="text-center mb-6">
             <h1 class="text-3xl font-bold text-yellow-400">40k Stream Controller</h1>
         </header>
-        <!-- Game State Controls -->
         <div class="bg-gray-800 p-4 rounded-lg mb-6 flex flex-col items-center">
             <h2 class="text-2xl font-semibold mb-4">Game State</h2>
             <div class="flex items-center space-x-4">
@@ -106,7 +121,6 @@
                 <button id="nextTurnBtn" class="btn btn-green">+</button>
             </div>
         </div>
-        <!-- Player Scoreboard Panels -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Player 1 Scoreboard -->
             <div id="player1" class="bg-gray-800 p-4 rounded-lg space-y-4">
@@ -127,7 +141,14 @@
                         <button data-player="1" data-field="cp" class="btn btn-green op-btn">+</button>
                     </div>
                 </div>
-                <!-- Player 1 Secondary Area -->
+                 <div class="flex items-center justify-between bg-gray-900 p-3 rounded-lg">
+                    <span class="text-xl font-semibold">Challenger VP</span>
+                    <div class="flex items-center space-x-3">
+                        <button data-player="1" data-field="challengerVp" class="btn btn-red op-btn">-</button>
+                        <span id="p1_challengerVp" class="text-3xl font-bold w-12 text-center">0</span>
+                        <button data-player="1" data-field="challengerVp" class="btn btn-green op-btn">+</button>
+                    </div>
+                </div>
                 <div id="p1_secondaries_area" class="space-y-3"></div>
                 <div class="text-center bg-gray-900 p-3 rounded-lg">
                     <div class="text-lg text-gray-400">Total Score</div>
@@ -153,7 +174,14 @@
                         <button data-player="2" data-field="cp" class="btn btn-green op-btn">+</button>
                     </div>
                 </div>
-                <!-- Player 2 Secondary Area -->
+                <div class="flex items-center justify-between bg-gray-900 p-3 rounded-lg">
+                    <span class="text-xl font-semibold">Challenger VP</span>
+                    <div class="flex items-center space-x-3">
+                        <button data-player="2" data-field="challengerVp" class="btn btn-red op-btn">-</button>
+                        <span id="p2_challengerVp" class="text-3xl font-bold w-12 text-center">0</span>
+                        <button data-player="2" data-field="challengerVp" class="btn btn-green op-btn">+</button>
+                    </div>
+                </div>
                 <div id="p2_secondaries_area" class="space-y-3"></div>
                 <div class="text-center bg-gray-900 p-3 rounded-lg">
                     <div class="text-lg text-gray-400">Total Score</div>
@@ -162,9 +190,22 @@
             </div>
         </div>
         <footer class="text-center mt-8 space-y-4">
+            <button id="fullScoreSheetBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-lg">Full Score Sheet</button>
             <button id="backToSetupBtn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg">Return to Setup</button>
             <button id="resetGameBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">Reset Game</button>
         </footer>
+    </div>
+
+    <!-- Score Sheet Modal -->
+    <div id="scoreSheetModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden">
+        <div class="bg-gray-800 text-white p-6 rounded-lg max-w-4xl w-full">
+            <h2 class="text-2xl font-bold mb-4 text-center">Full Score Sheet</h2>
+            <div id="scoreSheetContent" class="overflow-x-auto"></div>
+            <div class="text-center mt-6 no-print">
+                <button id="printScoreSheetBtn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded">Print to PDF</button>
+                <button id="closeScoreSheetBtn" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded">Close</button>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -195,6 +236,10 @@
         const scoreboardPage = document.getElementById('scoreboardPage');
         const startGameBtn = document.getElementById('startGameBtn');
         const backToSetupBtn = document.getElementById('backToSetupBtn');
+        const fullScoreSheetBtn = document.getElementById('fullScoreSheetBtn');
+        const scoreSheetModal = document.getElementById('scoreSheetModal');
+        const closeScoreSheetBtn = document.getElementById('closeScoreSheetBtn');
+        const printScoreSheetBtn = document.getElementById('printScoreSheetBtn');
 
         function showScoreboard() {
             setupPage.classList.add('hidden');
@@ -223,10 +268,13 @@
             document.getElementById('p1_name').textContent = gameState.player1.name;
             document.getElementById('p1_cp').textContent = gameState.player1.cp;
             document.getElementById('p1_primaryVp').textContent = gameState.player1.primaryVp;
+            document.getElementById('p1_challengerVp').textContent = gameState.player1.challengerVp;
             document.getElementById('p1_totalVp').textContent = gameState.player1.totalVp;
+
             document.getElementById('p2_name').textContent = gameState.player2.name;
             document.getElementById('p2_cp').textContent = gameState.player2.cp;
             document.getElementById('p2_primaryVp').textContent = gameState.player2.primaryVp;
+            document.getElementById('p2_challengerVp').textContent = gameState.player2.challengerVp;
             document.getElementById('p2_totalVp').textContent = gameState.player2.totalVp;
 
             renderPlayerSecondaries(1);
@@ -236,6 +284,7 @@
         function populateSetupDropdowns(objectives) {
             const selects = document.querySelectorAll('#setupPage .secondary-select');
             selects.forEach(select => {
+                const currentVal = select.value;
                 select.innerHTML = '';
                 const defaultOption = document.createElement('option');
                 defaultOption.value = "Select Secondary...";
@@ -247,6 +296,7 @@
                     option.textContent = obj.name;
                     select.appendChild(option);
                 });
+                select.value = currentVal;
             });
         }
 
@@ -256,19 +306,19 @@
             area.innerHTML = '';
 
             if (player.missionType === 'Fixed') {
-                for (let i = 1; i <= 3; i++) {
+                for (let i = 1; i <= 2; i++) { // Only 2 fixed secondaries
                     const secondaryKey = `secondary${i}`;
-                    const secondary = player[secondaryKey] || { name: 'Select Secondary...', score: 0 };
+                    const secondary = player[secondaryKey] || { name: 'Not Selected', score: 0 };
                     const container = document.createElement('div');
                     container.className = 'bg-gray-900 p-3 rounded-lg';
                     container.innerHTML = `
                         <h3 class="text-lg font-bold mb-2">${secondary.name}</h3>
-                        <div class="space-y-2">
-                            <!-- Scoring buttons will be generated here -->
-                        </div>
                         <div class="flex justify-between items-center mt-3">
                             <span class="text-xl font-semibold">Score: <span id="p${playerNum}_sec${i}_score" class="font-bold">${secondary.score}</span></span>
-                            <button data-player="${playerNum}" data-secondary="${i}" class="bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold py-1 px-3 rounded op-clear-btn">Clear</button>
+                            <div>
+                                <button data-player="${playerNum}" data-secondary="${i}" class="btn btn-red op-sec-btn">-</button>
+                                <button data-player="${playerNum}" data-secondary="${i}" class="btn btn-green op-sec-btn">+</button>
+                            </div>
                         </div>
                     `;
                     area.appendChild(container);
@@ -307,12 +357,10 @@
             if (p1_missions === 'Fixed') {
                 payload['gameState.player1.secondary1.name'] = document.getElementById('setup_p1_sec1').value;
                 payload['gameState.player1.secondary2.name'] = document.getElementById('setup_p1_sec2').value;
-                payload['gameState.player1.secondary3.name'] = document.getElementById('setup_p1_sec3').value;
             }
              if (p2_missions === 'Fixed') {
                 payload['gameState.player2.secondary1.name'] = document.getElementById('setup_p2_sec1').value;
                 payload['gameState.player2.secondary2.name'] = document.getElementById('setup_p2_sec2').value;
-                payload['gameState.player2.secondary3.name'] = document.getElementById('setup_p2_sec3').value;
             }
 
             await updateDoc(appDocRef, payload);
@@ -331,6 +379,12 @@
             }
         }
 
+        function renderScoreSheet() {
+            const content = document.getElementById('scoreSheetContent');
+            // ... Logic to build and render the score sheet table will go here ...
+            content.innerHTML = `<p class="text-center">Score sheet coming soon!</p>`;
+        }
+
         async function init() {
             try {
                 await signInAnonymously(auth);
@@ -342,8 +396,8 @@
                     const initialData = {
                         gameState: {
                             setupComplete: false, turn: 1,
-                            player1: { name: "Player 1", faction: "", detachment: "", role: "Attacker", missionType: "Fixed", cp: 0, primaryVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0}, secondary3: {name: "Select Secondary...", score: 0} },
-                            player2: { name: "Player 2", faction: "", detachment: "", role: "Defender", missionType: "Fixed", cp: 0, primaryVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0}, secondary3: {name: "Select Secondary...", score: 0} }
+                            player1: { name: "Player 1", faction: "", detachment: "", role: "Attacker", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} },
+                            player2: { name: "Player 2", faction: "", detachment: "", role: "Defender", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} }
                         },
                         fixed_objectives: [ { name: "Example Fixed", description: "Score points.", scoring_tiers: [{ label: "+5 VP", vp: 5 }] } ],
                         tactical_objectives: [ { id: 1, name: "Example Tactical", description: "Score points.", scoring_tiers: [{ label: "+3 VP", vp: 3 }] } ]
@@ -359,6 +413,12 @@
 
                 startGameBtn.addEventListener('click', handleStartGame);
                 backToSetupBtn.addEventListener('click', handleBackToSetup);
+                fullScoreSheetBtn.addEventListener('click', () => {
+                    renderScoreSheet();
+                    scoreSheetModal.classList.remove('hidden');
+                });
+                closeScoreSheetBtn.addEventListener('click', () => scoreSheetModal.classList.add('hidden'));
+                printScoreSheetBtn.addEventListener('click', () => window.print());
                 
                 document.querySelectorAll('.toggle-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
