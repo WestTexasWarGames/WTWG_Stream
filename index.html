@@ -400,12 +400,16 @@
             };
 
             if (p1_missions === 'Fixed') {
-                payload['gameState.player1.secondary1.name'] = document.getElementById('setup_p1_sec1').value;
-                payload['gameState.player1.secondary2.name'] = document.getElementById('setup_p1_sec2').value;
+                const p1_sec1 = document.getElementById('setup_p1_sec1').value;
+                const p1_sec2 = document.getElementById('setup_p1_sec2').value;
+                if (p1_sec1 !== "Select Secondary...") payload['gameState.player1.secondary1.name'] = p1_sec1;
+                if (p1_sec2 !== "Select Secondary...") payload['gameState.player1.secondary2.name'] = p1_sec2;
             }
              if (p2_missions === 'Fixed') {
-                payload['gameState.player2.secondary1.name'] = document.getElementById('setup_p2_sec1').value;
-                payload['gameState.player2.secondary2.name'] = document.getElementById('setup_p2_sec2').value;
+                const p2_sec1 = document.getElementById('setup_p2_sec1').value;
+                const p2_sec2 = document.getElementById('setup_p2_sec2').value;
+                if (p2_sec1 !== "Select Secondary...") payload['gameState.player2.secondary1.name'] = p2_sec1;
+                if (p2_sec2 !== "Select Secondary...") payload['gameState.player2.secondary2.name'] = p2_sec2;
             }
 
             await updateDoc(appDocRef, payload);
