@@ -44,6 +44,10 @@
         <header class="text-center mb-6">
             <h1 class="text-3xl font-bold text-yellow-400">Game Setup</h1>
         </header>
+        <div class="bg-gray-800 p-4 rounded-lg space-y-4 mb-6">
+             <h2 class="text-2xl font-bold text-center">Mission Setup</h2>
+             <select id="setup_primary_mission" class="secondary-select"></select>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Player 1 Setup -->
             <div class="bg-gray-800 p-4 rounded-lg space-y-4">
@@ -125,14 +129,7 @@
             <!-- Player 1 Scoreboard -->
             <div id="player1" class="bg-gray-800 p-4 rounded-lg space-y-4">
                 <div id="p1_name" class="text-2xl font-bold text-center"></div>
-                <div class="flex items-center justify-between bg-gray-900 p-3 rounded-lg">
-                    <span class="text-xl font-semibold">Primary VP</span>
-                    <div class="flex items-center space-x-3">
-                        <button data-player="1" data-field="primaryVp" class="btn btn-red op-btn">-</button>
-                        <span id="p1_primaryVp" class="text-3xl font-bold w-12 text-center">0</span>
-                        <button data-player="1" data-field="primaryVp" class="btn btn-green op-btn">+</button>
-                    </div>
-                </div>
+                <div id="p1_primary_area" class="bg-gray-900 p-3 rounded-lg"></div>
                 <div class="flex items-center justify-between bg-gray-900 p-3 rounded-lg">
                     <span class="text-xl font-semibold">CP</span>
                     <div class="flex items-center space-x-3">
@@ -164,14 +161,7 @@
             <!-- Player 2 Scoreboard -->
             <div id="player2" class="bg-gray-800 p-4 rounded-lg space-y-4">
                 <div id="p2_name" class="text-2xl font-bold text-center"></div>
-                 <div class="flex items-center justify-between bg-gray-900 p-3 rounded-lg">
-                    <span class="text-xl font-semibold">Primary VP</span>
-                    <div class="flex items-center space-x-3">
-                        <button data-player="2" data-field="primaryVp" class="btn btn-red op-btn">-</button>
-                        <span id="p2_primaryVp" class="text-3xl font-bold w-12 text-center">0</span>
-                        <button data-player="2" data-field="primaryVp" class="btn btn-green op-btn">+</button>
-                    </div>
-                </div>
+                 <div id="p2_primary_area" class="bg-gray-900 p-3 rounded-lg"></div>
                 <div class="flex items-center justify-between bg-gray-900 p-3 rounded-lg">
                     <span class="text-xl font-semibold">CP</span>
                     <div class="flex items-center space-x-3">
@@ -241,6 +231,7 @@
 
         let gameState = {};
         let appDocRef;
+        let primaryMissions = [];
         let fixedObjectives = [];
         let tacticalObjectives = [];
 
@@ -267,12 +258,13 @@
             if (!data || !data.gameState) return;
             gameState = data.gameState;
             
+            primaryMissions = data.primary_missions || [];
             fixedObjectives = data.fixed_objectives || [];
             tacticalObjectives = data.tactical_objectives || [];
             
             if (!gameState.setupComplete) {
                 showSetup();
-                populateSetupDropdowns(fixedObjectives);
+                populateSetupDropdowns(fixedObjectives, primaryMissions);
                 return;
             }
             showScoreboard();
@@ -280,23 +272,23 @@
             document.getElementById('turn').textContent = gameState.turn;
             document.getElementById('p1_name').textContent = gameState.player1.name;
             document.getElementById('p1_cp').textContent = gameState.player1.cp;
-            document.getElementById('p1_primaryVp').textContent = gameState.player1.primaryVp;
             document.getElementById('p1_challengerVp').textContent = gameState.player1.challengerVp;
             document.getElementById('p1_tacticalVp').textContent = gameState.player1.tacticalVp;
             document.getElementById('p1_totalVp').textContent = gameState.player1.totalVp;
 
             document.getElementById('p2_name').textContent = gameState.player2.name;
             document.getElementById('p2_cp').textContent = gameState.player2.cp;
-            document.getElementById('p2_primaryVp').textContent = gameState.player2.primaryVp;
             document.getElementById('p2_challengerVp').textContent = gameState.player2.challengerVp;
             document.getElementById('p2_tacticalVp').textContent = gameState.player2.tacticalVp;
             document.getElementById('p2_totalVp').textContent = gameState.player2.totalVp;
 
+            renderPrimaryMission(1);
+            renderPrimaryMission(2);
             renderPlayerSecondaries(1);
             renderPlayerSecondaries(2);
         }
 
-        function populateSetupDropdowns(objectives) {
+        function populateSetupDropdowns(objectives, primaries) {
             const selects = document.querySelectorAll('#setupPage .secondary-select');
             selects.forEach(select => {
                 const currentVal = select.value;
@@ -313,6 +305,40 @@
                 });
                 select.value = currentVal;
             });
+
+            const primarySelect = document.getElementById('setup_primary_mission');
+            const currentPrimary = primarySelect.value;
+            primarySelect.innerHTML = '';
+            const defaultPrimary = document.createElement('option');
+            defaultPrimary.value = "Select Primary Mission...";
+            defaultPrimary.textContent = "Select Primary Mission...";
+            primarySelect.appendChild(defaultPrimary);
+            primaries.forEach(p => {
+                const option = document.createElement('option');
+                option.value = p.name;
+                option.textContent = p.name;
+                primarySelect.appendChild(option);
+            });
+            primarySelect.value = currentPrimary;
+        }
+
+        function renderPrimaryMission(playerNum) {
+            const area = document.getElementById(`p${playerNum}_primary_area`);
+            const mission = primaryMissions.find(p => p.name === gameState.primaryMission);
+            area.innerHTML = '';
+            if (!mission) return;
+
+            const tiersHTML = mission.scoring_tiers.map(tier => 
+                `<button class="tier-btn" data-player="${playerNum}" data-primary-vp="${tier.vp}">${tier.label} (+${tier.vp} VP)</button>`
+            ).join('');
+
+            area.innerHTML = `
+                <h3 class="text-lg font-bold mb-2">${mission.name}</h3>
+                <div class="space-y-2">${tiersHTML}</div>
+                <div class="flex justify-between items-center mt-3">
+                    <span class="text-xl font-semibold">Score: <span id="p${playerNum}_primaryVp" class="font-bold">${gameState[`player${playerNum}`].primaryVp}</span></span>
+                </div>
+            `;
         }
 
         function renderPlayerSecondaries(playerNum) {
@@ -392,8 +418,11 @@
             const p2_detachment = document.getElementById('setup_p2_detachment').value;
             const p2_role = document.querySelector('#setup_p2_role .toggle-btn-active').dataset.role;
             const p2_missions = document.querySelector('#setup_p2_missions .toggle-btn-active').dataset.mission;
+            
+            const primaryMission = document.getElementById('setup_primary_mission').value;
 
             const payload = {
+                'gameState.primaryMission': primaryMission,
                 'gameState.player1.name': p1_name, 'gameState.player1.faction': p1_faction, 'gameState.player1.detachment': p1_detachment, 'gameState.player1.role': p1_role, 'gameState.player1.missionType': p1_missions,
                 'gameState.player2.name': p2_name, 'gameState.player2.faction': p2_faction, 'gameState.player2.detachment': p2_detachment, 'gameState.player2.role': p2_role, 'gameState.player2.missionType': p2_missions,
                 'gameState.setupComplete': true
@@ -469,6 +498,8 @@
             } else if (target.classList.contains('tier-btn')) {
                 const fixedVp = target.dataset.fixedVp;
                 const tacticalVp = target.dataset.tacticalVp;
+                const primaryVp = target.dataset.primaryVp;
+
                 if (fixedVp) {
                     const secondary = target.dataset.secondary;
                     const vp = parseInt(fixedVp, 10);
@@ -482,6 +513,12 @@
                     const key = `gameState.player${playerNum}.tacticalVp`;
                     const currentValue = player.tacticalVp || 0;
                     gameState[`player${playerNum}`].tacticalVp = currentValue + vp;
+                    await updateFirestore({ [key]: currentValue + vp });
+                } else if (primaryVp) {
+                    const vp = parseInt(primaryVp, 10);
+                    const key = `gameState.player${playerNum}.primaryVp`;
+                    const currentValue = player.primaryVp || 0;
+                    gameState[`player${playerNum}`].primaryVp = currentValue + vp;
                     await updateFirestore({ [key]: currentValue + vp });
                 }
             } else if (target.classList.contains('draw-tactical-btn')) {
@@ -526,6 +563,7 @@
                 const newData = getInitialData();
                 newData.fixed_objectives = currentData.data().fixed_objectives;
                 newData.tactical_objectives = currentData.data().tactical_objectives;
+                newData.primary_missions = currentData.data().primary_missions;
                 await setDoc(appDocRef, newData);
             }
         }
@@ -533,12 +571,13 @@
         function getInitialData() {
              return {
                 gameState: {
-                    setupComplete: false, turn: 1,
+                    setupComplete: false, turn: 1, primaryMission: "Select Primary Mission...",
                     player1: { name: "Player 1", faction: "", detachment: "", role: "Attacker", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, tacticalVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical1: null, activeTactical2: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} },
                     player2: { name: "Player 2", faction: "", detachment: "", role: "Defender", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical1: null, activeTactical2: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} }
                 },
                 fixed_objectives: [],
-                tactical_objectives: []
+                tactical_objectives: [],
+                primary_missions: []
             };
         }
 
