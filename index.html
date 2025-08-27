@@ -419,7 +419,15 @@
         }
 
         async function handleBackToSetup() {
-            await updateDoc(appDocRef, { 'gameState.setupComplete': false });
+            if (confirm("Are you sure? This will reset all scores but keep your setup information.")) {
+                const initialData = getInitialData();
+                await updateDoc(appDocRef, { 
+                    'gameState.setupComplete': false,
+                    'gameState.turn': 1,
+                    'gameState.player1.cp': 0, 'gameState.player1.primaryVp': 0, 'gameState.player1.challengerVp': 0, 'gameState.player1.tacticalVp': 0, 'gameState.player1.totalVp': 0, 'gameState.player1.drawnTacticalIds': [], 'gameState.player1.activeTactical1': null, 'gameState.player1.activeTactical2': null, 'gameState.player1.secondary1.score': 0, 'gameState.player1.secondary2.score': 0,
+                    'gameState.player2.cp': 0, 'gameState.player2.primaryVp': 0, 'gameState.player2.challengerVp': 0, 'gameState.player2.tacticalVp': 0, 'gameState.player2.totalVp': 0, 'gameState.player2.drawnTacticalIds': [], 'gameState.player2.activeTactical1': null, 'gameState.player2.activeTactical2': null, 'gameState.player2.secondary1.score': 0, 'gameState.player2.secondary2.score': 0,
+                });
+            }
         }
 
         function toggleFixedMissionView(playerNum, missionType) {
@@ -522,6 +530,25 @@
             let newTurn = increment ? Math.min(5, currentTurn + 1) : Math.max(1, currentTurn - 1);
             await updateFirestore({ 'gameState.turn': newTurn });
         }
+        
+        async function resetGame() {
+            if (confirm("Are you sure you want to completely reset the game? This will erase all setup info and scores.")) {
+                const initialData = getInitialData();
+                await setDoc(appDocRef, initialData);
+            }
+        }
+
+        function getInitialData() {
+             return {
+                gameState: {
+                    setupComplete: false, turn: 1,
+                    player1: { name: "Player 1", faction: "", detachment: "", role: "Attacker", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, tacticalVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical1: null, activeTactical2: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} },
+                    player2: { name: "Player 2", faction: "", detachment: "", role: "Defender", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical1: null, activeTactical2: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} }
+                },
+                fixed_objectives: "[{\"name\":\"Example Fixed\",\"description\":\"Score points.\",\"scoring_tiers\":[{\"label\":\"+5 VP\",\"vp\":5}]}]",
+                tactical_objectives: "[{\"name\":\"Example Tactical\",\"description\":\"Score points.\",\"scoring_tiers\":[{\"label\":\"+3 VP\",\"vp\":3}]}]"
+            };
+        }
 
         async function init() {
             try {
@@ -531,16 +558,7 @@
 
                 const appDocSnap = await getDoc(appDocRef);
                 if (!appDocSnap.exists()) {
-                    const initialData = {
-                        gameState: {
-                            setupComplete: false, turn: 1,
-                            player1: { name: "Player 1", faction: "", detachment: "", role: "Attacker", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, tacticalVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical1: null, activeTactical2: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} },
-                            player2: { name: "Player 2", faction: "", detachment: "", role: "Defender", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, tacticalVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical1: null, activeTactical2: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} }
-                        },
-                        fixed_objectives: "[{\"name\":\"Example Fixed\",\"description\":\"Score points.\",\"scoring_tiers\":[{\"label\":\"+5 VP\",\"vp\":5}]}]",
-                        tactical_objectives: "[{\"name\":\"Example Tactical\",\"description\":\"Score points.\",\"scoring_tiers\":[{\"label\":\"+3 VP\",\"vp\":3}]}]"
-                    };
-                    await setDoc(appDocRef, initialData);
+                    await setDoc(appDocRef, getInitialData());
                 }
 
                 onSnapshot(appDocRef, (docSnap) => {
@@ -551,6 +569,7 @@
 
                 startGameBtn.addEventListener('click', handleStartGame);
                 backToSetupBtn.addEventListener('click', handleBackToSetup);
+                resetGameBtn.addEventListener('click', resetGame);
                 fullScoreSheetBtn.addEventListener('click', () => {
                     renderScoreSheet();
                     scoreSheetModal.classList.remove('hidden');
