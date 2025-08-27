@@ -317,16 +317,23 @@
                 for (let i = 1; i <= 2; i++) {
                     const secondaryKey = `secondary${i}`;
                     const secondary = player[secondaryKey] || { name: 'Not Selected', score: 0 };
+                    const secondaryData = fixedObjectives.find(s => s.name === secondary.name);
+                    
                     const container = document.createElement('div');
                     container.className = 'bg-gray-900 p-3 rounded-lg';
+                    let tiersHTML = '';
+                    if (secondaryData && secondaryData.scoring_tiers) {
+                        tiersHTML = secondaryData.scoring_tiers.map(tier => 
+                            `<button class="tier-btn" data-player="${playerNum}" data-secondary="${i}" data-fixed-vp="${tier.vp}">${tier.label} (+${tier.vp} VP)</button>`
+                        ).join('');
+                    }
+
                     container.innerHTML = `
                         <h3 class="text-lg font-bold mb-2">${secondary.name}</h3>
+                        <div class="space-y-2">${tiersHTML}</div>
                         <div class="flex justify-between items-center mt-3">
                             <span class="text-xl font-semibold">Score: <span id="p${playerNum}_sec${i}_score" class="font-bold">${secondary.score}</span></span>
-                            <div>
-                                <button data-player="${playerNum}" data-secondary="${i}" class="btn btn-red op-sec-btn">-</button>
-                                <button data-player="${playerNum}" data-secondary="${i}" class="btn btn-green op-sec-btn">+</button>
-                            </div>
+                            <button data-player="${playerNum}" data-secondary="${i}" class="bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold py-1 px-3 rounded op-clear-btn">Clear</button>
                         </div>
                     `;
                     area.appendChild(container);
@@ -353,7 +360,7 @@
                 container.innerHTML = `
                     <h3 class="text-xl font-bold text-center mb-2">Tactical Missions</h3>
                     <div id="p${playerNum}_active_mission" class="bg-gray-800 p-3 rounded-md min-h-[100px] mb-3">${missionHTML}</div>
-                    <button data-player="${playerNum}" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded draw-tactical-btn">Draw Tactical Mission</button>
+                    <button data-player="${playerNum}" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded draw-tactical-btn">Draw Secondary</button>
                 `;
                 area.appendChild(container);
             }
@@ -439,13 +446,22 @@
                 const currentValue = player[field] || 0;
                 const newValue = isIncrement ? currentValue + 1 : Math.max(0, currentValue - 1);
                 await updateFirestore({ [key]: newValue });
-            } else if (target.classList.contains('op-sec-btn')) {
-                const secondary = target.dataset.secondary;
-                const isIncrement = target.classList.contains('btn-green');
-                const key = `gameState.player${playerNum}.secondary${secondary}.score`;
-                const currentScore = player[`secondary${secondary}`].score || 0;
-                const newValue = isIncrement ? currentScore + 1 : Math.max(0, currentScore - 1);
-                await updateFirestore({ [key]: newValue });
+
+            } else if (target.classList.contains('tier-btn')) {
+                const fixedVp = target.dataset.fixedVp;
+                const tacticalVp = target.dataset.tacticalVp;
+                if (fixedVp) {
+                    const secondary = target.dataset.secondary;
+                    const vp = parseInt(fixedVp, 10);
+                    const key = `gameState.player${playerNum}.secondary${secondary}.score`;
+                    const currentScore = player[`secondary${secondary}`].score || 0;
+                    await updateFirestore({ [key]: currentScore + vp });
+                } else if (tacticalVp) {
+                    const vp = parseInt(tacticalVp, 10);
+                    const key = `gameState.player${playerNum}.challengerVp`;
+                    const currentValue = player.challengerVp || 0;
+                    await updateFirestore({ [key]: currentValue + vp, [`gameState.player${playerNum}.activeTactical`]: null });
+                }
             } else if (target.classList.contains('draw-tactical-btn')) {
                 const drawnIds = player.drawnTacticalIds || [];
                 const available = tacticalObjectives.filter(t => !drawnIds.includes(t.id));
@@ -459,13 +475,12 @@
                 } else {
                     alert("No more Tactical Missions to draw!");
                 }
-            } else if (target.classList.contains('tier-btn')) {
-                const vp = parseInt(target.dataset.tacticalVp, 10);
-                const key = `gameState.player${playerNum}.challengerVp`;
-                const currentValue = player.challengerVp || 0;
-                await updateFirestore({ [key]: currentValue + vp, [`gameState.player${playerNum}.activeTactical`]: null });
             } else if (target.classList.contains('complete-tactical-btn')) {
                  await updateFirestore({ [`gameState.player${playerNum}.activeTactical`]: null });
+            } else if (target.classList.contains('op-clear-btn')) {
+                const secondary = target.dataset.secondary;
+                const key = `gameState.player${playerNum}.secondary${secondary}.score`;
+                await updateFirestore({ [key]: 0 });
             }
         }
 
