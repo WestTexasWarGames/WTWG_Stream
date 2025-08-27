@@ -341,25 +341,32 @@
             } else {
                 const container = document.createElement('div');
                 container.className = 'bg-gray-900 p-3 rounded-lg';
-                let missionHTML = '';
-                if (player.activeTactical) {
-                    const mission = tacticalObjectives.find(t => t.name === player.activeTactical);
-                    if (mission) {
-                        missionHTML = `
-                            <h4 class="text-lg font-bold">${mission.name}</h4>
-                            <p class="text-sm text-gray-400">${mission.description}</p>
-                            <div class="space-y-2 mt-2">
-                                ${mission.scoring_tiers.map(tier => `<button class="tier-btn" data-player="${playerNum}" data-tactical-vp="${tier.vp}">+${tier.vp} VP: ${tier.label}</button>`).join('')}
-                            </div>
-                            <button data-player="${playerNum}" class="w-full mt-3 bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-1 px-3 rounded complete-tactical-btn">Complete Mission</button>
-                        `;
+                
+                let missionsHTML = '';
+                for (let i = 1; i <= 2; i++) {
+                    const activeTacticalKey = `activeTactical${i}`;
+                    let missionHTML = '';
+                    if (player[activeTacticalKey]) {
+                        const mission = tacticalObjectives.find(t => t.name === player[activeTacticalKey]);
+                        if (mission) {
+                            missionHTML = `
+                                <h4 class="text-lg font-bold">${mission.name}</h4>
+                                <p class="text-sm text-gray-400">${mission.description}</p>
+                                <div class="space-y-2 mt-2">
+                                    ${mission.scoring_tiers.map(tier => `<button class="tier-btn" data-player="${playerNum}" data-tactical-slot="${i}" data-tactical-vp="${tier.vp}">+${tier.vp} VP: ${tier.label}</button>`).join('')}
+                                </div>
+                                <button data-player="${playerNum}" data-tactical-slot="${i}" class="w-full mt-3 bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-1 px-3 rounded complete-tactical-btn">Complete Mission</button>
+                            `;
+                        }
+                    } else {
+                        missionHTML = `<p class="text-center text-gray-400">Slot ${i} Empty</p>`;
                     }
-                } else {
-                    missionHTML = `<p class="text-center text-gray-400">No active mission.</p>`;
+                    missionsHTML += `<div class="bg-gray-800 p-3 rounded-md min-h-[100px] mb-3">${missionHTML}</div>`;
                 }
+
                 container.innerHTML = `
                     <h3 class="text-xl font-bold text-center mb-2">Secondaries</h3>
-                    <div id="p${playerNum}_active_mission" class="bg-gray-800 p-3 rounded-md min-h-[100px] mb-3">${missionHTML}</div>
+                    ${missionsHTML}
                     <button data-player="${playerNum}" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded draw-tactical-btn">Draw Secondary</button>
                 `;
                 area.appendChild(container);
@@ -459,12 +466,13 @@
                     gameState[`player${playerNum}`][`secondary${secondary}`].score = currentScore + vp; 
                     await updateFirestore({ [key]: currentScore + vp });
                 } else if (tacticalVp) {
+                    const slot = target.dataset.tacticalSlot;
                     const vp = parseInt(tacticalVp, 10);
                     const key = `gameState.player${playerNum}.challengerVp`;
                     const currentValue = player.challengerVp || 0;
                     gameState[`player${playerNum}`].challengerVp = currentValue + vp;
-                    gameState[`player${playerNum}`].activeTactical = null;
-                    await updateFirestore({ [key]: currentValue + vp, [`gameState.player${playerNum}.activeTactical`]: null });
+                    gameState[`player${playerNum}`][`activeTactical${slot}`] = null;
+                    await updateFirestore({ [key]: currentValue + vp, [`gameState.player${playerNum}.activeTactical${slot}`]: null });
                 }
             } else if (target.classList.contains('draw-tactical-btn')) {
                 const drawnIds = player.drawnTacticalIds || [];
@@ -472,15 +480,22 @@
                 if (available.length > 0) {
                     const mission = available[Math.floor(Math.random() * available.length)];
                     const newDrawnIds = [...drawnIds, mission.name];
-                    await updateFirestore({
-                        [`gameState.player${playerNum}.activeTactical`]: mission.name,
-                        [`gameState.player${playerNum}.drawnTacticalIds`]: newDrawnIds
-                    });
+                    let payload = { [`gameState.player${playerNum}.drawnTacticalIds`]: newDrawnIds };
+                    if (!player.activeTactical1) {
+                        payload[`gameState.player${playerNum}.activeTactical1`] = mission.name;
+                    } else if (!player.activeTactical2) {
+                        payload[`gameState.player${playerNum}.activeTactical2`] = mission.name;
+                    } else {
+                        alert("Both tactical slots are full!");
+                        return;
+                    }
+                    await updateFirestore(payload);
                 } else {
                     alert("No more Tactical Missions to draw!");
                 }
             } else if (target.classList.contains('complete-tactical-btn')) {
-                 await updateFirestore({ [`gameState.player${playerNum}.activeTactical`]: null });
+                 const slot = target.dataset.tacticalSlot;
+                 await updateFirestore({ [`gameState.player${playerNum}.activeTactical${slot}`]: null });
             } else if (target.classList.contains('op-clear-btn')) {
                 const secondary = target.dataset.secondary;
                 const key = `gameState.player${playerNum}.secondary${secondary}.score`;
@@ -506,8 +521,8 @@
                     const initialData = {
                         gameState: {
                             setupComplete: false, turn: 1,
-                            player1: { name: "Player 1", faction: "", detachment: "", role: "Attacker", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} },
-                            player2: { name: "Player 2", faction: "", detachment: "", role: "Defender", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} }
+                            player1: { name: "Player 1", faction: "", detachment: "", role: "Attacker", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical1: null, activeTactical2: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} },
+                            player2: { name: "Player 2", faction: "", detachment: "", role: "Defender", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical1: null, activeTactical2: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} }
                         },
                         fixed_objectives: "[{\"name\":\"Example Fixed\",\"description\":\"Score points.\",\"scoring_tiers\":[{\"label\":\"+5 VP\",\"vp\":5}]}]",
                         tactical_objectives: "[{\"name\":\"Example Tactical\",\"description\":\"Score points.\",\"scoring_tiers\":[{\"label\":\"+3 VP\",\"vp\":3}]}]"
