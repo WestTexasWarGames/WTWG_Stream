@@ -12,7 +12,7 @@
         .btn-green { @apply bg-emerald-500 text-white; }
         .btn-red { @apply bg-red-500 text-white; }
         .secondary-select { @apply w-full bg-gray-700 text-white p-2 rounded-md border border-gray-600; }
-        .tier-btn { @apply w-full text-left p-2 rounded-md bg-sky-600 hover:bg-sky-500 text-white transition-colors duration-150 active:scale-[0.98]; }
+        .tier-btn { @apply w-full text-left p-2 rounded-md bg-sky-600 hover:bg-sky-500 text-white transition-colors duration-150 active:scale-[0.98] border border-sky-400 shadow-md; }
         .toggle-label { @apply block text-gray-400 text-sm; }
         .toggle-btn { @apply px-4 py-2 rounded-md font-semibold transition-colors; }
         .toggle-btn-active { @apply bg-sky-600 text-white ring-2 ring-sky-400; }
@@ -358,7 +358,7 @@
                     missionHTML = `<p class="text-center text-gray-400">No active mission.</p>`;
                 }
                 container.innerHTML = `
-                    <h3 class="text-xl font-bold text-center mb-2">Tactical Missions</h3>
+                    <h3 class="text-xl font-bold text-center mb-2">Secondaries</h3>
                     <div id="p${playerNum}_active_mission" class="bg-gray-800 p-3 rounded-md min-h-[100px] mb-3">${missionHTML}</div>
                     <button data-player="${playerNum}" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded draw-tactical-btn">Draw Secondary</button>
                 `;
@@ -445,6 +445,7 @@
                 const key = `gameState.player${playerNum}.${field}`;
                 const currentValue = player[field] || 0;
                 const newValue = isIncrement ? currentValue + 1 : Math.max(0, currentValue - 1);
+                gameState[`player${playerNum}`][field] = newValue; // Update local state first
                 await updateFirestore({ [key]: newValue });
 
             } else if (target.classList.contains('tier-btn')) {
@@ -455,11 +456,14 @@
                     const vp = parseInt(fixedVp, 10);
                     const key = `gameState.player${playerNum}.secondary${secondary}.score`;
                     const currentScore = player[`secondary${secondary}`].score || 0;
+                    gameState[`player${playerNum}`][`secondary${secondary}`].score = currentScore + vp; // Update local state
                     await updateFirestore({ [key]: currentScore + vp });
                 } else if (tacticalVp) {
                     const vp = parseInt(tacticalVp, 10);
                     const key = `gameState.player${playerNum}.challengerVp`;
                     const currentValue = player.challengerVp || 0;
+                    gameState[`player${playerNum}`].challengerVp = currentValue + vp; // Update local state
+                    gameState[`player${playerNum}`].activeTactical = null;
                     await updateFirestore({ [key]: currentValue + vp, [`gameState.player${playerNum}.activeTactical`]: null });
                 }
             } else if (target.classList.contains('draw-tactical-btn')) {
@@ -480,8 +484,15 @@
             } else if (target.classList.contains('op-clear-btn')) {
                 const secondary = target.dataset.secondary;
                 const key = `gameState.player${playerNum}.secondary${secondary}.score`;
+                gameState[`player${playerNum}`][`secondary${secondary}`].score = 0; // Update local state
                 await updateFirestore({ [key]: 0 });
             }
+        }
+        
+        async function handleTurnChange(increment) {
+            const currentTurn = gameState.turn || 1;
+            let newTurn = increment ? Math.min(5, currentTurn + 1) : Math.max(1, currentTurn - 1);
+            await updateFirestore({ 'gameState.turn': newTurn });
         }
 
         async function init() {
@@ -519,6 +530,9 @@
                 closeScoreSheetBtn.addEventListener('click', () => scoreSheetModal.classList.add('hidden'));
                 printScoreSheetBtn.addEventListener('click', () => window.print());
                 
+                document.getElementById('nextTurnBtn').addEventListener('click', () => handleTurnChange(true));
+                document.getElementById('prevTurnBtn').addEventListener('click', () => handleTurnChange(false));
+
                 document.querySelectorAll('.toggle-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
                         if (btn.classList.contains('toggle-btn-active')) return;
