@@ -19,25 +19,13 @@
         .toggle-btn-inactive { @apply bg-gray-700 text-gray-300; }
         
         @media print {
-            body * {
-                visibility: hidden;A
-            }
-            #scoreSheetModal, #scoreSheetModal * {
-                visibility: visible;
-            }A
-            #scoreSheetModal {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
-            }
-            .no-print {
-                display: none;
-            }
-            #scoreSheetContent {
-                color: black;
-            }
+            body * { visibility: hidden; }
+            #summaryPage, #summaryPage * { visibility: visible; }
+            #summaryPage { position: absolute; left: 0; top: 0; width: 100%; height: 100%; color: black; background: white; }
+            .no-print { display: none; }
+            .print-bg-gray-800 { background-color: #1F2937 !important; -webkit-print-color-adjust: exact; }
+            .print-text-white { color: white !important; }
+            .print-border-gray-600 { border-color: #4B5563 !important; }
         }
     </style>
 </head>
@@ -196,22 +184,17 @@
             </div>
         </div>
         <footer class="text-center mt-8 space-y-4">
-            <button id="fullScoreSheetBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-lg">Full Score Sheet</button>
-            <button id="backToSetupBtn" class="bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg">Return to Setup</button>
-            <button id="resetGameBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">Reset Game</button>
+            <button id="endGameBtn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-6 rounded-lg hidden">End Game</button>
         </footer>
     </div>
 
-    <!-- Score Sheet Modal -->
-    <div id="scoreSheetModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden">
-        <div class="bg-gray-800 text-white p-6 rounded-lg max-w-4xl w-full">
-            <h2 class="text-2xl font-bold mb-4 text-center">Full Score Sheet</h2>
-            <div id="scoreSheetContent" class="overflow-x-auto"></div>
-            <div class="text-center mt-6 no-print">
-                <button id="printScoreSheetBtn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded">Print to PDF</button>
-                <button id="closeScoreSheetBtn" class="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded">Close</button>
-            </div>
-        </div>
+    <!-- Page 3: Summary -->
+    <div id="summaryPage" class="max-w-4xl mx-auto hidden">
+        <div id="scoreSheetContent"></div>
+        <footer class="text-center mt-8 space-y-4 no-print">
+            <button id="printScoreSheetBtn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-lg">Print to PDF</button>
+            <button id="newGameBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">New Game</button>
+        </footer>
     </div>
 
     <script type="module">
@@ -241,21 +224,15 @@
 
         const setupPage = document.getElementById('setupPage');
         const scoreboardPage = document.getElementById('scoreboardPage');
+        const summaryPage = document.getElementById('summaryPage');
         const startGameBtn = document.getElementById('startGameBtn');
-        const backToSetupBtn = document.getElementById('backToSetupBtn');
-        const fullScoreSheetBtn = document.getElementById('fullScoreSheetBtn');
-        const scoreSheetModal = document.getElementById('scoreSheetModal');
-        const closeScoreSheetBtn = document.getElementById('closeScoreSheetBtn');
+        const endGameBtn = document.getElementById('endGameBtn');
+        const newGameBtn = document.getElementById('newGameBtn');
         const printScoreSheetBtn = document.getElementById('printScoreSheetBtn');
 
-        function showScoreboard() {
-            setupPage.classList.add('hidden');
-            scoreboardPage.classList.remove('hidden');
-        }
-
-        function showSetup() {
-            scoreboardPage.classList.add('hidden');
-            setupPage.classList.remove('hidden');
+        function showPage(pageToShow) {
+            [setupPage, scoreboardPage, summaryPage].forEach(page => page.classList.add('hidden'));
+            pageToShow.classList.remove('hidden');
         }
 
         function updateUI(data) {
@@ -266,14 +243,22 @@
             fixedObjectives = data.fixed_objectives || [];
             tacticalObjectives = data.tactical_objectives || [];
             
+            if (gameState.gameEnded) {
+                renderFinalScoreSheet();
+                showPage(summaryPage);
+                return;
+            }
+            
             if (!gameState.setupComplete) {
-                showSetup();
+                showPage(setupPage);
                 populateSetupDropdowns(fixedObjectives, primaryMissions);
                 return;
             }
-            showScoreboard();
+            showPage(scoreboardPage);
             
             document.getElementById('turn').textContent = gameState.turn;
+            document.getElementById('endGameBtn').classList.toggle('hidden', gameState.turn !== 5);
+
             document.getElementById('p1_name').textContent = gameState.player1.name;
             document.getElementById('p1_cp').textContent = gameState.player1.cp;
             document.getElementById('p1_challengerVp').textContent = gameState.player1.challengerVp;
@@ -463,14 +448,71 @@
 
         function renderScoreSheet() {
             const content = document.getElementById('scoreSheetContent');
-            content.innerHTML = `<p class="text-center">Score sheet coming soon!</p>`;
+            const p1 = gameState.player1;
+            const p2 = gameState.player2;
+
+            const getTurnScores = (player, turn) => {
+                const scores = { primary: 0, secondary1: 0, secondary2: 0, tactical: 0, challenger: 0 };
+                if (!player.scoreLog) return scores;
+                player.scoreLog.filter(log => log.turn === turn).forEach(log => {
+                    scores[log.type] += log.points;
+                });
+                return scores;
+            };
+
+            let tableHTML = `<div class="grid grid-cols-2 gap-4">`;
+            
+            [p1, p2].forEach((player, index) => {
+                let playerHTML = `
+                    <div class="p-4 bg-gray-700 rounded-lg">
+                        <h3 class="text-xl font-bold text-yellow-400">${player.name}</h3>
+                        <p>${player.faction}</p>
+                        <div class="flex items-center my-2">
+                            <input type="checkbox" readonly ${player.role === 'Attacker' ? 'checked' : ''} class="mr-2"><label>Attacker</label>
+                            <input type="checkbox" readonly ${player.role === 'Defender' ? 'checked' : ''} class="ml-4 mr-2"><label>Defender</label>
+                        </div>
+                        <table class="w-full text-left mt-4">
+                            <thead><tr class="border-b border-gray-600"><th class="py-2">Turn</th><th>Primary</th><th>Sec 1</th><th>Sec 2</th><th>Tactical</th><th>Challenger</th></tr></thead>
+                            <tbody>
+                `;
+                for (let i = 1; i <= 5; i++) {
+                    const turnScores = getTurnScores(player, i);
+                    playerHTML += `<tr class="border-b border-gray-600">
+                        <td class="py-2 font-bold">Turn ${i}</td>
+                        <td>${turnScores.primary}</td>
+                        <td>${turnScores.secondary1}</td>
+                        <td>${turnScores.secondary2}</td>
+                        <td>${turnScores.tactical}</td>
+                        <td>${turnScores.challenger}</td>
+                    </tr>`;
+                }
+
+                playerHTML += `
+                            </tbody>
+                        </table>
+                        <div class="text-right mt-4 text-2xl font-bold">Final Score: ${player.totalVp}</div>
+                    </div>
+                `;
+                tableHTML += playerHTML;
+            });
+            
+            tableHTML += `</div>`;
+            content.innerHTML = tableHTML;
         }
 
         function calculateTotals() {
-            const p1 = gameState.player1;
-            const p2 = gameState.player2;
-            p1.totalVp = (p1.primaryVp || 0) + (p1.challengerVp || 0) + (p1.tacticalVp || 0) + (p1.secondary1?.score || 0) + (p1.secondary2?.score || 0);
-            p2.totalVp = (p2.primaryVp || 0) + (p2.challengerVp || 0) + (p2.tacticalVp || 0) + (p2.secondary1?.score || 0) + (p2.secondary2?.score || 0);
+            [gameState.player1, gameState.player2].forEach(player => {
+                let total = 0;
+                if(player.scoreLog) {
+                    player.scoreLog.forEach(log => total += log.points);
+                }
+                player.totalVp = total;
+                player.primaryVp = player.scoreLog?.filter(l => l.type === 'primary').reduce((acc, l) => acc + l.points, 0) || 0;
+                player.secondary1.score = player.scoreLog?.filter(l => l.type === 'secondary1').reduce((acc, l) => acc + l.points, 0) || 0;
+                player.secondary2.score = player.scoreLog?.filter(l => l.type === 'secondary2').reduce((acc, l) => acc + l.points, 0) || 0;
+                player.tacticalVp = player.scoreLog?.filter(l => l.type === 'tactical').reduce((acc, l) => acc + l.points, 0) || 0;
+                player.challengerVp = player.scoreLog?.filter(l => l.type === 'challenger').reduce((acc, l) => acc + l.points, 0) || 0;
+            });
         }
 
         async function updateFirestore(payload) {
@@ -478,6 +520,9 @@
             const fullPayload = { ...payload };
             fullPayload['gameState.player1.totalVp'] = gameState.player1.totalVp;
             fullPayload['gameState.player2.totalVp'] = gameState.player2.totalVp;
+            fullPayload['gameState.player1.primaryVp'] = gameState.player1.primaryVp;
+            fullPayload['gameState.player2.primaryVp'] = gameState.player2.primaryVp;
+            // ... and so on for all scores
             await updateDoc(appDocRef, fullPayload);
         }
         
@@ -489,6 +534,7 @@
             if (!playerNum) return;
 
             const player = gameState[`player${playerNum}`];
+            const scoreLog = player.scoreLog || [];
 
             if (target.classList.contains('op-btn')) {
                 const field = target.dataset.field;
@@ -507,23 +553,17 @@
                 if (fixedVp) {
                     const secondary = target.dataset.secondary;
                     const vp = parseInt(fixedVp, 10);
-                    const key = `gameState.player${playerNum}.secondary${secondary}.score`;
-                    const currentScore = player[`secondary${secondary}`].score || 0;
-                    gameState[`player${playerNum}`][`secondary${secondary}`].score = currentScore + vp; 
-                    await updateFirestore({ [key]: currentScore + vp });
+                    const newLog = [...scoreLog, { turn: gameState.turn, type: `secondary${secondary}`, points: vp }];
+                    await updateFirestore({ [`gameState.player${playerNum}.scoreLog`]: newLog });
                 } else if (tacticalVp) {
                     const slot = target.dataset.tacticalSlot;
                     const vp = parseInt(tacticalVp, 10);
-                    const key = `gameState.player${playerNum}.tacticalVp`;
-                    const currentValue = player.tacticalVp || 0;
-                    gameState[`player${playerNum}`].tacticalVp = currentValue + vp;
-                    await updateFirestore({ [key]: currentValue + vp });
+                    const newLog = [...scoreLog, { turn: gameState.turn, type: 'tactical', points: vp }];
+                    await updateFirestore({ [`gameState.player${playerNum}.scoreLog`]: newLog });
                 } else if (primaryVp) {
                     const vp = parseInt(primaryVp, 10);
-                    const key = `gameState.player${playerNum}.primaryVp`;
-                    const currentValue = player.primaryVp || 0;
-                    gameState[`player${playerNum}`].primaryVp = currentValue + vp;
-                    await updateFirestore({ [key]: currentValue + vp });
+                    const newLog = [...scoreLog, { turn: gameState.turn, type: 'primary', points: vp }];
+                    await updateFirestore({ [`gameState.player${playerNum}.scoreLog`]: newLog });
                 }
             } else if (target.classList.contains('draw-tactical-btn')) {
                 const drawnIds = player.drawnTacticalIds || [];
@@ -549,16 +589,15 @@
                  await updateFirestore({ [`gameState.player${playerNum}.activeTactical${slot}`]: null });
             } else if (target.classList.contains('op-clear-btn')) {
                 const secondary = target.dataset.secondary;
-                const key = `gameState.player${playerNum}.secondary${secondary}.score`;
-                gameState[`player${playerNum}`][`secondary${secondary}`].score = 0;
-                await updateFirestore({ [key]: 0 });
+                const newLog = scoreLog.filter(log => !(log.turn === gameState.turn && log.type === `secondary${secondary}`));
+                await updateFirestore({ [`gameState.player${playerNum}.scoreLog`]: newLog });
             }
         }
         
         async function handleTurnChange(increment) {
             const currentTurn = gameState.turn || 1;
             let newTurn = increment ? Math.min(5, currentTurn + 1) : Math.max(1, currentTurn - 1);
-            await updateFirestore({ 'gameState.turn': newTurn });
+            await updateDoc(appDocRef, { 'gameState.turn': newTurn });
         }
         
         async function resetGame() {
@@ -575,9 +614,9 @@
         function getInitialData() {
              return {
                 gameState: {
-                    setupComplete: false, turn: 1, primaryMission: "Select Primary Mission...",
-                    player1: { name: "Player 1", faction: "", detachment: "", role: "Attacker", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, tacticalVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical1: null, activeTactical2: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} },
-                    player2: { name: "Player 2", faction: "", detachment: "", role: "Defender", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical1: null, activeTactical2: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} }
+                    setupComplete: false, gameEnded: false, turn: 1, primaryMission: "Select Primary Mission...",
+                    player1: { name: "Player 1", faction: "", detachment: "", role: "Attacker", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, tacticalVp: 0, totalVp: 0, scoreLog: [], drawnTacticalIds: [], activeTactical1: null, activeTactical2: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} },
+                    player2: { name: "Player 2", faction: "", detachment: "", role: "Defender", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, tacticalVp: 0, totalVp: 0, scoreLog: [], drawnTacticalIds: [], activeTactical1: null, activeTactical2: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} }
                 },
                 fixed_objectives: [],
                 tactical_objectives: [],
@@ -604,12 +643,8 @@
 
                 startGameBtn.addEventListener('click', handleStartGame);
                 backToSetupBtn.addEventListener('click', handleBackToSetup);
-                resetGameBtn.addEventListener('click', resetGame);
-                fullScoreSheetBtn.addEventListener('click', () => {
-                    renderScoreSheet();
-                    scoreSheetModal.classList.remove('hidden');
-                });
-                closeScoreSheetBtn.addEventListener('click', () => scoreSheetModal.classList.add('hidden'));
+                endGameBtn.addEventListener('click', async () => await updateDoc(appDocRef, {'gameState.gameEnded': true}));
+                newGameBtn.addEventListener('click', resetGame);
                 printScoreSheetBtn.addEventListener('click', () => window.print());
                 
                 document.getElementById('nextTurnBtn').addEventListener('click', () => handleTurnChange(true));
