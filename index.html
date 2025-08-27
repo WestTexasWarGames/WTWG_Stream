@@ -24,14 +24,6 @@
                 <label for="primaryJson" class="block text-lg font-semibold mb-2">Primary Missions JSON</label>
                 <textarea id="primaryJson" rows="10" class="w-full bg-gray-800 text-white p-2 rounded-md border border-gray-700 focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="Paste your Primary Missions JSON array here..."></textarea>
             </div>
-            <div>
-                <label for="fixedJson" class="block text-lg font-semibold mb-2">Fixed Objectives JSON</label>
-                <textarea id="fixedJson" rows="10" class="w-full bg-gray-800 text-white p-2 rounded-md border border-gray-700 focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="Paste your Fixed Objectives JSON array here..."></textarea>
-            </div>
-            <div>
-                <label for="tacticalJson" class="block text-lg font-semibold mb-2">Tactical Objectives JSON</label>
-                <textarea id="tacticalJson" rows="10" class="w-full bg-gray-800 text-white p-2 rounded-md border border-gray-700 focus:ring-2 focus:ring-sky-500 focus:outline-none" placeholder="Paste your Tactical Objectives JSON array here..."></textarea>
-            </div>
         </div>
 
         <div class="text-center mt-8">
@@ -63,8 +55,6 @@
         const importBtn = document.getElementById('importBtn');
         const statusEl = document.getElementById('status');
         const primaryJsonEl = document.getElementById('primaryJson');
-        const fixedJsonEl = document.getElementById('fixedJson');
-        const tacticalJsonEl = document.getElementById('tacticalJson');
 
         async function handleImport() {
             statusEl.textContent = 'Connecting...';
@@ -75,9 +65,6 @@
                 statusEl.textContent = 'Authenticated. Preparing data...';
 
                 const primaryText = primaryJsonEl.value.trim();
-                const fixedText = fixedJsonEl.value.trim();
-                const tacticalText = tacticalJsonEl.value.trim();
-
                 const payload = {};
 
                 if (primaryText) {
@@ -85,21 +72,9 @@
                     if (!Array.isArray(primaryData)) throw new Error("Primary Missions data must be a JSON array.");
                     payload.primary_missions = primaryData;
                 }
-
-                if (fixedText) {
-                    const fixedData = JSON.parse(fixedText);
-                    if (!Array.isArray(fixedData)) throw new Error("Fixed Objectives data must be a JSON array.");
-                    payload.fixed_objectives = fixedData;
-                }
-
-                if (tacticalText) {
-                    const tacticalData = JSON.parse(tacticalText);
-                    if (!Array.isArray(tacticalData)) throw new Error("Tactical Objectives data must be a JSON array.");
-                    payload.tactical_objectives = tacticalData;
-                }
                 
                 if (Object.keys(payload).length === 0) {
-                    throw new Error("At least one text box must contain JSON data to import.");
+                    throw new Error("The text box must contain JSON data to import.");
                 }
 
                 statusEl.textContent = 'Data validated. Uploading...';
