@@ -267,15 +267,8 @@
             if (!data || !data.gameState) return;
             gameState = data.gameState;
             
-            let fixedData = data.fixed_objectives || [];
-            if (typeof fixedData === 'string') {
-                try { fixedObjectives = JSON.parse(fixedData); } catch (e) { console.error("Failed to parse fixed_objectives:", e); fixedObjectives = []; }
-            } else { fixedObjectives = fixedData; }
-
-            let tacticalData = data.tactical_objectives || [];
-            if (typeof tacticalData === 'string') {
-                try { tacticalObjectives = JSON.parse(tacticalData); } catch (e) { console.error("Failed to parse tactical_objectives:", e); tacticalObjectives = []; }
-            } else { tacticalObjectives = tacticalData; }
+            fixedObjectives = data.fixed_objectives || [];
+            tacticalObjectives = data.tactical_objectives || [];
             
             if (!gameState.setupComplete) {
                 showSetup();
@@ -419,15 +412,7 @@
         }
 
         async function handleBackToSetup() {
-            if (confirm("Are you sure? This will reset all scores but keep your setup information.")) {
-                const initialData = getInitialData();
-                await updateDoc(appDocRef, { 
-                    'gameState.setupComplete': false,
-                    'gameState.turn': 1,
-                    'gameState.player1.cp': 0, 'gameState.player1.primaryVp': 0, 'gameState.player1.challengerVp': 0, 'gameState.player1.tacticalVp': 0, 'gameState.player1.totalVp': 0, 'gameState.player1.drawnTacticalIds': [], 'gameState.player1.activeTactical1': null, 'gameState.player1.activeTactical2': null, 'gameState.player1.secondary1.score': 0, 'gameState.player1.secondary2.score': 0,
-                    'gameState.player2.cp': 0, 'gameState.player2.primaryVp': 0, 'gameState.player2.challengerVp': 0, 'gameState.player2.tacticalVp': 0, 'gameState.player2.totalVp': 0, 'gameState.player2.drawnTacticalIds': [], 'gameState.player2.activeTactical1': null, 'gameState.player2.activeTactical2': null, 'gameState.player2.secondary1.score': 0, 'gameState.player2.secondary2.score': 0,
-                });
-            }
+            await updateDoc(appDocRef, { 'gameState.setupComplete': false });
         }
 
         function toggleFixedMissionView(playerNum, missionType) {
@@ -545,8 +530,8 @@
                     player1: { name: "Player 1", faction: "", detachment: "", role: "Attacker", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, tacticalVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical1: null, activeTactical2: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} },
                     player2: { name: "Player 2", faction: "", detachment: "", role: "Defender", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical1: null, activeTactical2: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} }
                 },
-                fixed_objectives: "[{\"name\":\"Example Fixed\",\"description\":\"Score points.\",\"scoring_tiers\":[{\"label\":\"+5 VP\",\"vp\":5}]}]",
-                tactical_objectives: "[{\"name\":\"Example Tactical\",\"description\":\"Score points.\",\"scoring_tiers\":[{\"label\":\"+3 VP\",\"vp\":3}]}]"
+                fixed_objectives: [ { name: "Example Fixed", description: "Score points.", scoring_tiers: [{ label: "+5 VP", vp: 5 }] } ],
+                tactical_objectives: [ { name: "Example Tactical", description: "Score points.", scoring_tiers: [{ label: "+3 VP", vp: 3 }] } ]
             };
         }
 
