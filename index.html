@@ -149,6 +149,12 @@
                         <button data-player="1" data-field="challengerVp" class="btn btn-green op-btn">+</button>
                     </div>
                 </div>
+                 <div class="flex items-center justify-between bg-gray-900 p-3 rounded-lg">
+                    <span class="text-xl font-semibold">Tactical VP</span>
+                    <div class="flex items-center space-x-3">
+                        <span id="p1_tacticalVp" class="text-3xl font-bold w-12 text-center">0</span>
+                    </div>
+                </div>
                 <div id="p1_secondaries_area" class="space-y-3"></div>
                 <div class="text-center bg-gray-900 p-3 rounded-lg">
                     <div class="text-lg text-gray-400">Total Score</div>
@@ -180,6 +186,12 @@
                         <button data-player="2" data-field="challengerVp" class="btn btn-red op-btn">-</button>
                         <span id="p2_challengerVp" class="text-3xl font-bold w-12 text-center">0</span>
                         <button data-player="2" data-field="challengerVp" class="btn btn-green op-btn">+</button>
+                    </div>
+                </div>
+                 <div class="flex items-center justify-between bg-gray-900 p-3 rounded-lg">
+                    <span class="text-xl font-semibold">Tactical VP</span>
+                    <div class="flex items-center space-x-3">
+                        <span id="p2_tacticalVp" class="text-3xl font-bold w-12 text-center">0</span>
                     </div>
                 </div>
                 <div id="p2_secondaries_area" class="space-y-3"></div>
@@ -277,12 +289,14 @@
             document.getElementById('p1_cp').textContent = gameState.player1.cp;
             document.getElementById('p1_primaryVp').textContent = gameState.player1.primaryVp;
             document.getElementById('p1_challengerVp').textContent = gameState.player1.challengerVp;
+            document.getElementById('p1_tacticalVp').textContent = gameState.player1.tacticalVp;
             document.getElementById('p1_totalVp').textContent = gameState.player1.totalVp;
 
             document.getElementById('p2_name').textContent = gameState.player2.name;
             document.getElementById('p2_cp').textContent = gameState.player2.cp;
             document.getElementById('p2_primaryVp').textContent = gameState.player2.primaryVp;
             document.getElementById('p2_challengerVp').textContent = gameState.player2.challengerVp;
+            document.getElementById('p2_tacticalVp').textContent = gameState.player2.tacticalVp;
             document.getElementById('p2_totalVp').textContent = gameState.player2.totalVp;
 
             renderPlayerSecondaries(1);
@@ -425,8 +439,8 @@
         function calculateTotals() {
             const p1 = gameState.player1;
             const p2 = gameState.player2;
-            p1.totalVp = (p1.primaryVp || 0) + (p1.challengerVp || 0) + (p1.secondary1?.score || 0) + (p1.secondary2?.score || 0);
-            p2.totalVp = (p2.primaryVp || 0) + (p2.challengerVp || 0) + (p2.secondary1?.score || 0) + (p2.secondary2?.score || 0);
+            p1.totalVp = (p1.primaryVp || 0) + (p1.challengerVp || 0) + (p1.tacticalVp || 0) + (p1.secondary1?.score || 0) + (p1.secondary2?.score || 0);
+            p2.totalVp = (p2.primaryVp || 0) + (p2.challengerVp || 0) + (p2.tacticalVp || 0) + (p2.secondary1?.score || 0) + (p2.secondary2?.score || 0);
         }
 
         async function updateFirestore(payload) {
@@ -468,11 +482,10 @@
                 } else if (tacticalVp) {
                     const slot = target.dataset.tacticalSlot;
                     const vp = parseInt(tacticalVp, 10);
-                    const key = `gameState.player${playerNum}.challengerVp`;
-                    const currentValue = player.challengerVp || 0;
-                    gameState[`player${playerNum}`].challengerVp = currentValue + vp;
-                    gameState[`player${playerNum}`][`activeTactical${slot}`] = null;
-                    await updateFirestore({ [key]: currentValue + vp, [`gameState.player${playerNum}.activeTactical${slot}`]: null });
+                    const key = `gameState.player${playerNum}.tacticalVp`;
+                    const currentValue = player.tacticalVp || 0;
+                    gameState[`player${playerNum}`].tacticalVp = currentValue + vp;
+                    await updateFirestore({ [key]: currentValue + vp });
                 }
             } else if (target.classList.contains('draw-tactical-btn')) {
                 const drawnIds = player.drawnTacticalIds || [];
@@ -521,8 +534,8 @@
                     const initialData = {
                         gameState: {
                             setupComplete: false, turn: 1,
-                            player1: { name: "Player 1", faction: "", detachment: "", role: "Attacker", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical1: null, activeTactical2: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} },
-                            player2: { name: "Player 2", faction: "", detachment: "", role: "Defender", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical1: null, activeTactical2: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} }
+                            player1: { name: "Player 1", faction: "", detachment: "", role: "Attacker", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, tacticalVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical1: null, activeTactical2: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} },
+                            player2: { name: "Player 2", faction: "", detachment: "", role: "Defender", missionType: "Fixed", cp: 0, primaryVp: 0, challengerVp: 0, tacticalVp: 0, totalVp: 0, drawnTacticalIds: [], activeTactical1: null, activeTactical2: null, secondary1: {name: "Select Secondary...", score: 0}, secondary2: {name: "Select Secondary...", score: 0} }
                         },
                         fixed_objectives: "[{\"name\":\"Example Fixed\",\"description\":\"Score points.\",\"scoring_tiers\":[{\"label\":\"+5 VP\",\"vp\":5}]}]",
                         tactical_objectives: "[{\"name\":\"Example Tactical\",\"description\":\"Score points.\",\"scoring_tiers\":[{\"label\":\"+3 VP\",\"vp\":3}]}]"
