@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Connection Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white p-8">
+
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-3xl font-bold text-yellow-400 mb-4">Firebase Database Test</h1>
+        <p class="mb-4">This page is attempting to connect to your Firestore database and read the 'warhammer-game-data' document.</p>
+        
+        <div class="bg-gray-800 p-4 rounded-lg">
+            <h2 class="text-xl font-semibold mb-2">Connection Status:</h2>
+            <div id="status" class="text-lg font-mono p-2 bg-black rounded">Connecting...</div>
+            
+            <h2 class="text-xl font-semibold mt-4 mb-2">Data Read from Database:</h2>
+            <pre id="output" class="text-sm font-mono p-2 bg-black rounded h-96 overflow-auto">Waiting for data...</pre>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyAlhqPMvqP1MO_sV_jIXf7jrrm1MJtL2aI",
+          authDomain: "wtwg-streaming.firebaseapp.com",
+          projectId: "wtwg-streaming",
+          storageBucket: "wtwg-streaming.appspot.com",
+          messagingSenderId: "889956031791",
+          appId: "1:889956031791:web:d9292c951c8270f6abd5da",
+          measurementId: "G-5T9HMW7DMX"
+        };
+
+        const statusEl = document.getElementById('status');
+        const outputEl = document.getElementById('output');
+
+        async function runTest() {
+            try {
+                // Step 1: Initialize Firebase
+                const app = initializeApp(firebaseConfig);
+                const db = getFirestore(app);
+                const auth = getAuth(app);
+                statusEl.textContent = "Firebase Initialized...";
+
+                // Step 2: Sign in anonymously
+                await signInAnonymously(auth);
+                statusEl.textContent = "Signed In Anonymously...";
+
+                // Step 3: Define the document reference
+                const docId = "warhammer-game-data";
+                const appDocRef = doc(db, "gamedata", docId);
+                statusEl.textContent = "Document reference created...";
+
+                // Step 4: Try to get the document
+                const appDocSnap = await getDoc(appDocRef);
+                statusEl.textContent = "Attempting to read document...";
+
+                if (appDocSnap.exists()) {
+                    statusEl.textContent = "SUCCESS: Document found and read!";
+                    statusEl.classList.add('text-green-400');
+                    outputEl.textContent = JSON.stringify(appDocSnap.data(), null, 2);
+                } else {
+                    statusEl.textContent = "ERROR: Connection successful, but the document 'gamedata/warhammer-game-data' does not exist.";
+                    statusEl.classList.add('text-red-400');
+                    outputEl.textContent = "Please run the main app once to create the document, or create it manually.";
+                }
+
+            } catch (error) {
+                statusEl.textContent = "CRITICAL ERROR: Connection failed!";
+                statusEl.classList.add('text-red-400');
+                outputEl.textContent = `Error Name: ${error.name}\n\nError Message: ${error.message}\n\nStack Trace:\n${error.stack}`;
+                console.error("Firebase connection failed:", error);
+            }
+        }
+
+        runTest();
+    </script>
+</body>
+</html>
